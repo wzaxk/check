@@ -1,1 +1,2 @@
+script_key=nil
 loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/0e920628266183531bd97eb82edfda3e.lua"))()
