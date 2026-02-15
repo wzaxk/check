@@ -902,9 +902,9 @@ end)
         end
 
 
-     function Module:create_slider()
+ function Module:create_slider()
     local drag = false
-    local section = self.section == 'left' and left_section
+    local section = self.section == 'left' and left_section or right_section
 
     local slider = Instance.new("TextButton")
     slider.Name = "Slider"
@@ -915,13 +915,12 @@ end)
     slider.Font = Enum.Font.SourceSans
     slider.Text = ""
     slider.TextColor3 = Color3.fromRGB(0, 0, 0)
-    slider.TextSize = 14.000
+    slider.TextSize = 14
     slider.Parent = section
 
     local UICorner = Instance.new("UICorner")
     UICorner.CornerRadius = UDim.new(0, 10)
     UICorner.Parent = slider
-
 
     local Box = Instance.new("Frame")
     Box.Name = "Box"
@@ -931,7 +930,6 @@ end)
     Box.BorderSizePixel = 0
     Box.Position = UDim2.new(0.5, 0, 0.75, 0)
     Box.Size = UDim2.new(1, -20, 0, 6)
-
 
     local Glow = Instance.new("ImageLabel")
     Glow.Name = "Glow"
@@ -945,15 +943,10 @@ end)
 
     local UIGradient = Instance.new("UIGradient")
     UIGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(0, 255, 120)), 
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(0, 230, 80)) 
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 80))
     }
     UIGradient.Parent = Glow
-
-
-
-
-
 
     local Fill = Instance.new("ImageLabel")
     Fill.Name = "Fill"
@@ -964,15 +957,11 @@ end)
     Fill.Size = UDim2.new(1, 0, 0, 6)
     Fill.Image = "rbxassetid://17382033116"
 
-
     local UIGradient_2 = Instance.new("UIGradient")
-
     UIGradient_2.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(0, 255, 120)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(0, 230, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 80))
     }
-
-
     UIGradient_2.Parent = Fill
 
     local Hitbox = Instance.new("TextButton")
@@ -993,15 +982,14 @@ end)
     TextLabel.Parent = slider
     TextLabel.AnchorPoint = Vector2.new(0, 0.5)
     TextLabel.BackgroundTransparency = 1
-    TextLabel.Position = UDim2.new(0, 17, 0.35, 0) 
-    TextLabel.Size = UDim2.new(1, -20, 0, 15) 
+    TextLabel.Position = UDim2.new(0, 17, 0.35, 0)
+    TextLabel.Size = UDim2.new(1, -20, 0, 15)
     TextLabel.ZIndex = 2
     TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TextLabel.TextScaled = true
     TextLabel.TextWrapped = true
     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 
     local Number = Instance.new("TextLabel")
     Number.Name = "Number"
@@ -1018,18 +1006,21 @@ end)
     Number.TextXAlignment = Enum.TextXAlignment.Right
 
     TextLabel.Text = self.name
-    Number.Text = self.value
 
-    if not Library.Flags[self.flag] then
+    local saved_value = Library.Flags[self.flag]
+    if saved_value ~= nil then
+        Number.Text = saved_value
+        Fill.Size = UDim2.new((saved_value - self.minimum_value) / (self.maximum_value - self.minimum_value), 0, 0, 6)
+    else
         Library.Flags[self.flag] = self.value
+        Number.Text = self.value
+        Fill.Size = UDim2.new((self.value - self.minimum_value) / (self.maximum_value - self.minimum_value), 0, 0, 6)
     end
 
-    slider.Number.Text = Library.Flags[self.flag]
     self.callback(Library.Flags[self.flag])
 
     slider.Box.Hitbox.MouseButton1Down:Connect(function()
         if Library.slider_drag then return end
-
         Module.slider_loop({
             slider = slider,
             flag = self.flag,
