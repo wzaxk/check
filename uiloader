@@ -1307,8 +1307,10 @@ function Module:create_multidropdown()
 
     Dropdown:update()
 
-    Box.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+Box.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        
         open = not open
         if open then
             Dropdown:open()
@@ -1316,7 +1318,8 @@ function Module:create_multidropdown()
             Dropdown:close()
         end
     end
-	end)
+end)
+
 
     return Dropdown
 end
@@ -1544,8 +1547,10 @@ function Module:create_dropdown()
 
     Dropdown:update()
 
-    Box.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+Box.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        
         open = not open
         if open then
             Dropdown:open()
@@ -1553,7 +1558,8 @@ function Module:create_dropdown()
             Dropdown:close()
         end
     end
-	end)
+end)
+
 
     return Dropdown
 end
