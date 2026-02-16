@@ -1339,7 +1339,7 @@ function Module:create_dropdown()
     option.ZIndex = 2
     option.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     option.TextColor3 = Color3.fromRGB(255, 255, 255)
-    option.TextScaled = true
+    option.TextScaled = false  
     option.TextSize = 14.000
     option.TextTransparency = 0.5
     option.TextWrapped = true
@@ -1543,14 +1543,16 @@ function Module:create_dropdown()
 
     Dropdown:update()
 
-    dropdown.MouseButton1Click:Connect(function()
+    Box.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
         open = not open
         if open then
             Dropdown:open()
         else
             Dropdown:close()
         end
-    end)
+    end
+	end)
 
     return Dropdown
 end
