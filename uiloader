@@ -1307,15 +1307,16 @@ function Module:create_multidropdown()
 
     Dropdown:update()
 
-    dropdown.MouseButton1Click:Connect(function()
+    Box.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
         open = not open
-
         if open then
             Dropdown:open()
         else
             Dropdown:close()
         end
-    end)
+    end
+	end)
 
     return Dropdown
 end
@@ -1340,7 +1341,7 @@ function Module:create_dropdown()
     option.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     option.TextColor3 = Color3.fromRGB(255, 255, 255)
     option.TextScaled = false  
-    option.TextSize = 14.000
+    option.TextSize = 20.000
     option.TextTransparency = 0.5
     option.TextWrapped = true
     option.TextXAlignment = Enum.TextXAlignment.Left
@@ -1422,7 +1423,7 @@ function Module:create_dropdown()
     TextLabel.ZIndex = 2
     TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.TextScaled = true
+    TextLabel.TextScaled = false
     TextLabel.TextSize = 14.000
     TextLabel.TextWrapped = true
     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
