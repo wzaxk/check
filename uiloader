@@ -1,4 +1,5 @@
 
+
 --// govorgub
 
 local UserInputService = game:GetService('UserInputService')
@@ -1150,7 +1151,6 @@ function Module:create_multidropdown()
     function Dropdown:refreshOptions()
         self:clearOptions()
         list_size = 0
-
         for _, value in ipairs(self.options) do
             list_size += OPTION_HEIGHT
             local btn = optionTemplate:Clone()
@@ -1175,7 +1175,7 @@ function Module:create_multidropdown()
                 else
                     table.insert(self.selectedOptions, value)
                 end
-                Library.Flags[self.flag] = self.selectedOptions
+                Library.Flags[self.flag] = self
                 self:updateText()
                 self:refreshOptions()
                 if self.callback then
@@ -1199,9 +1199,15 @@ function Module:create_multidropdown()
         TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 0}):Play()
     end
 
+    function Dropdown:UpdateOptions(newOptions)
+        self.options = newOptions
+        self.selectedOptions = {}
+        self:updateText()
+        self:refreshOptions()
+    end
+
     Box.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             open = not open
             if open then Dropdown:open() else Dropdown:close() end
         end
@@ -1211,12 +1217,13 @@ function Module:create_multidropdown()
     Dropdown:updateText()
     Dropdown:refreshOptions()
 
-    Library.Flags[self.flag] = Dropdown.selectedOptions
+    Library.Flags[self.flag] = Dropdown
     Library.Objects = Library.Objects or {}
     Library.Objects[self.flag] = Dropdown
 
     return Dropdown
 end
+
 function Module:create_dropdown()
     local section = self.section == 'left' and left_section or right_section
     local list_size = 6
@@ -1393,13 +1400,20 @@ function Module:create_dropdown()
             new_option.MouseButton1Click:Connect(function()
                 self.selectedOption = value
                 TextLabel.Text = value
-                Library.Flags[self.flag] = value
+                if self.flag then
+                    Library.Flags[self.flag] = self.selectedOption
+                end
                 if self.callback then self.callback(value) end
                 Library.save_flags()
                 Dropdown:update(self)
                 Dropdown:close()
             end)
         end
+    end
+
+    function Dropdown:UpdateOptions(newOptions)
+        self.options = newOptions
+        self:update()
     end
 
     Dropdown.selectedOption = nil
@@ -1420,9 +1434,12 @@ function Module:create_dropdown()
         end
     end)
 
+    if self.flag then
+        Library.Flags[self.flag] = Dropdown
+    end
+
     return Dropdown
 end
-
 
 
         function Module:create_textbox()
