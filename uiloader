@@ -1,5 +1,5 @@
 
---// !govorgub! || guns.lol/govorgub
+--// govorgub || guns.lol/govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1102,12 +1102,16 @@ function Module:create_multidropdown()
     Arrow.BackgroundTransparency = 1
     Arrow.Image = "rbxassetid://17400678941"
 
-    local Options = Instance.new("Frame", Box)
-    Options.AnchorPoint = Vector2.new(0, 0)
-    Options.Position = UDim2.new(0, 0, 0.76, 0)
-    Options.Size = UDim2.new(1, 0, 0, 0)
-    Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-    Options.ClipsDescendants = true
+	local Options = Instance.new("ScrollingFrame", Box)
+	Options.AnchorPoint = Vector2.new(0, 0)
+	Options.Position = UDim2.new(0, 0, 0.76, 0)
+	Options.Size = UDim2.new(1, 0, 0, 150)
+	Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+	Options.ClipsDescendants = true
+	Options.CanvasSize = UDim2.new(0, 0, 0, 0)
+	Options.ScrollBarThickness = 6
+	Options.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
     local OptionsCorner = Instance.new("UICorner", Options)
     OptionsCorner.CornerRadius = UDim.new(0, 6)
     local UIPadding = Instance.new("UIPadding", Options)
@@ -1279,12 +1283,16 @@ function Module:create_dropdown()
     Arrow.BackgroundTransparency = 1
     Arrow.Image = "rbxassetid://17400678941"
 
-    local Options = Instance.new("Frame", Box)
-    Options.AnchorPoint = Vector2.new(0, 0)
-    Options.Position = UDim2.new(0, 0, 0.76, 0)
-    Options.Size = UDim2.new(1, 0, 0, 0)
-    Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-    Options.ClipsDescendants = true
+	local Options = Instance.new("ScrollingFrame", Box)
+	Options.AnchorPoint = Vector2.new(0, 0)
+	Options.Position = UDim2.new(0, 0, 0.76, 0)
+	Options.Size = UDim2.new(1, 0, 0, 150)
+	Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+	Options.ClipsDescendants = true
+	Options.CanvasSize = UDim2.new(0, 0, 0, 0)
+	Options.ScrollBarThickness = 6
+	Options.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	
     local OptionsCorner = Instance.new("UICorner", Options)
     OptionsCorner.CornerRadius = UDim.new(0, 6)
     local UIPadding = Instance.new("UIPadding", Options)
