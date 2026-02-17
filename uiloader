@@ -1,5 +1,5 @@
 
---// govorgub || guns.lol/govorgub
+--// @govorgub || guns.lol/govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
