@@ -1,6 +1,6 @@
 
 
---// govorgub
+--// govorgub123
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1589,120 +1589,102 @@ end
     end
 
 
-    function Module:create_keybind()
-        local section = self.section == 'left' and left_section
-        local keybind = Instance.new("TextButton")
-        keybind.Name = "Keybind"
-        keybind.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-        keybind.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        keybind.BorderSizePixel = 0
-        keybind.Position = UDim2.new(0.02, 0, 0, 37)
-        keybind.Size = UDim2.new(0.96, 0, 0, 50)
-        keybind.AutoButtonColor = false
-        keybind.Font = Enum.Font.SourceSans
-        keybind.Text = ""
-        keybind.TextColor3 = Color3.fromRGB(0, 0, 0)
-        keybind.TextSize = 14.000
-        keybind.Parent = section
+function Module:create_keybind()
+    local section = self.section == 'left' and left_section
 
-        local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(0, 10)
-        UICorner.Parent = keybind
+    local keybind = Instance.new("TextButton")
+    keybind.Name = "Keybind"
+    keybind.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+    keybind.BorderSizePixel = 0
+    keybind.Position = UDim2.new(0.02, 0, 0, 37)
+    keybind.Size = UDim2.new(0.96, 0, 0, 50)
+    keybind.AutoButtonColor = false
+    keybind.Text = ""
+    keybind.Parent = section
 
-        local TextLabel = Instance.new("TextLabel")
-        TextLabel.Parent = keybind
-        TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-        TextLabel.Position = UDim2.new(0, 17, 0.5, 0) 
-        TextLabel.Size = UDim2.new(1, -20, 0, 15) 
-        TextLabel.BackgroundTransparency = 1.0
-        TextLabel.BorderSizePixel = 0
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = keybind
 
-        TextLabel.FontFace = Font.new(
-            "rbxasset://fonts/families/Montserrat.json",
-            Enum.FontWeight.SemiBold
-        )
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextLabel.TextScaled = true
-        TextLabel.TextWrapped = true
-        TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-        TextLabel.Text = self.name
+    local Title = Instance.new("TextLabel")
+    Title.Parent = keybind
+    Title.AnchorPoint = Vector2.new(0, 0.5)
+    Title.Position = UDim2.new(0, 17, 0.5, 0)
+    Title.Size = UDim2.new(1, -20, 0, 15)
+    Title.BackgroundTransparency = 1
+    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.TextScaled = true
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Text = self.name
 
-            
-        local Box = Instance.new("Frame")
-        Box.Name = "Box"
-        Box.Parent = keybind
-        Box.AnchorPoint = Vector2.new(1, 0.5) 
-        Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-        Box.BorderSizePixel = 0
-        Box.AnchorPoint = Vector2.new(1, 0.5)
-        Box.Position = UDim2.new(1, -17, 0.5, 0)
+    local Box = Instance.new("Frame")
+    Box.Parent = keybind
+    Box.AnchorPoint = Vector2.new(1, 0.5)
+    Box.Position = UDim2.new(1, -17, 0.5, 0)
+    Box.Size = UDim2.new(0, 60, 0, 27)
+    Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+    Box.BorderSizePixel = 0
 
-        Box.Size = UDim2.new(0, 60, 0, 27)
-        local UICorner_2 = Instance.new("UICorner")
-        UICorner_2.CornerRadius = UDim.new(0, 4)
-        UICorner_2.Parent = Box
-        
+    local UICorner2 = Instance.new("UICorner")
+    UICorner2.CornerRadius = UDim.new(0, 4)
+    UICorner2.Parent = Box
 
-        local TextLabel_2 = Instance.new("TextLabel")
-        TextLabel_2.Parent = Box
-        TextLabel_2.AnchorPoint = Vector2.new(0.5, 0.5)
-        TextLabel_2.BackgroundTransparency = 1.0
-        TextLabel_2.BorderSizePixel = 0
-        TextLabel_2.Position = UDim2.new(0.5, 0, 0.5, 0)
-        TextLabel_2.Size = UDim2.new(1, -4, 1, -4)
-        TextLabel_2.FontFace = Font.new(
-            "rbxasset://fonts/families/Montserrat.json",
-            Enum.FontWeight.SemiBold
-        )
-        TextLabel_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextLabel_2.TextScaled = false
-        TextLabel_2.TextSize = 14 
-        TextLabel_2.TextWrapped = false
-        TextLabel_2.TextXAlignment = Enum.TextXAlignment.Center
-        TextLabel_2.TextYAlignment = Enum.TextYAlignment.Center
+    local KeyText = Instance.new("TextLabel")
+    KeyText.Parent = Box
+    KeyText.Size = UDim2.new(1, -4, 1, -4)
+    KeyText.Position = UDim2.new(0.5,0,0.5,0)
+    KeyText.AnchorPoint = Vector2.new(0.5,0.5)
+    KeyText.BackgroundTransparency = 1
+    KeyText.TextColor3 = Color3.fromRGB(255,255,255)
+    KeyText.TextSize = 14
+    KeyText.TextScaled = false
+    KeyText.TextXAlignment = Enum.TextXAlignment.Center
+    KeyText.TextYAlignment = Enum.TextYAlignment.Center
 
-        local defaultKey = self.keycode and self.keycode.Name or "H"
-        Library.Flags[self.flag] = Library.Flags[self.flag] or defaultKey
-        TextLabel_2.Text = Library.Flags[self.flag]
+    local defaultKey = self.keycode and self.keycode.Name or "H"
+    Library.Flags[self.flag] = Library.Flags[self.flag] or defaultKey
+    KeyText.Text = Library.Flags[self.flag]
 
-        local function updateKeybindSize()
-            local textWidth = TextLabel_2.TextBounds.X
-            local PADDING_X = 15
-            Box.Size = UDim2.new(0, textWidth + PADDING_X, 0, Box.Size.Y.Offset)
-        end
+    local function updateSize()
+        Box.Size = UDim2.new(0, KeyText.TextBounds.X + 15, 0, 27)
+    end
 
-        TextLabel_2:GetPropertyChangedSignal("Text"):Connect(updateKeybindSize)
-        updateKeybindSize()
+    KeyText:GetPropertyChangedSignal("Text"):Connect(updateSize)
+    updateSize()
+
+    local setting = false
 
     keybind.MouseButton1Click:Connect(function()
-    isSettingKeybind = true
-    TextLabel_2.Text = "..."
-    if keybindListener then
-        keybindListener:Disconnect()
-        keybindListener = nil
-    end
+        if setting then return end
+        setting = true
+        KeyText.Text = "..."
 
-    local a = UserInputService.InputBegan:Wait()
-    if a.UserInputType == Enum.UserInputType.Keyboard and a.KeyCode ~= Enum.KeyCode.Unknown then
-        Library.Flags[self.flag] = a.KeyCode.Name
-        Library.save_flags()
-        TextLabel_2.Text = a.KeyCode.Name
-    end
+        local connection
+        connection = UserInputService.InputBegan:Connect(function(input, gp)
+            if gp then return end
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                Library.Flags[self.flag] = input.KeyCode.Name
+                Library.save_flags()
+                KeyText.Text = input.KeyCode.Name
+                updateSize()
+                setting = false
+                connection:Disconnect()
+            end
+        end)
+    end)
 
-    game:GetService("RunService").RenderStepped:Wait()
-    isSettingKeybind = false 
-
-keybindListener = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-    
-    if input.KeyCode.Name == Library.Flags[self.flag] then
-        if self.callback then
-            self.callback(input.KeyCode.Name)
+    UserInputService.InputBegan:Connect(function(input, gp)
+        if gp then return end
+        if setting then return end
+        if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+        
+        if input.KeyCode.Name == Library.Flags[self.flag] then
+            if self.callback then
+                self.callback(input.KeyCode.Name)
+            end
         end
-    end
-end)
-end)
+    end)
+end
 
             end
             return Module
