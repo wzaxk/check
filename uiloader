@@ -1,6 +1,6 @@
 
 
---// govorgub123
+--// govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1692,11 +1692,16 @@ end
     game:GetService("RunService").RenderStepped:Wait()
     isSettingKeybind = false 
 
-    keybindListener = UserInputService.InputBegan:Connect(function(current, pressed)
-        if pressed then return end
-        if current.UserInputType ~= Enum.UserInputType.Keyboard then return end
+keybindListener = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
     
-    end)
+    if input.KeyCode.Name == Library.Flags[self.flag] then
+        if self.callback then
+            self.callback(input.KeyCode.Name)
+        end
+    end
+end)
 end)
 
             end
