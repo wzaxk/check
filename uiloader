@@ -1,5 +1,5 @@
 
---// govorgub! || guns.lol/govorgub
+--// govorgub!! || guns.lol/govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1038,7 +1038,6 @@ end)
         end
     end)
 end
-
 function Module:create_multidropdown()
     local section = self.section == 'left' and left_section or right_section
     local TweenService = game:GetService("TweenService")
@@ -1055,7 +1054,7 @@ function Module:create_multidropdown()
     optionTemplate.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.BackgroundTransparency = 1
     optionTemplate.BorderSizePixel = 0
-    optionTemplate.Size = UDim2.new(1, 0, 0, OPTION_HEIGHT) 
+    optionTemplate.Size = UDim2.new(0, 400, 0, 13)
     optionTemplate.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     optionTemplate.TextColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.TextSize = 14
@@ -1183,7 +1182,8 @@ function Module:create_multidropdown()
         self:updateText()
     end
 
-    local MAX_OPEN_HEIGHT = 999999999999 
+
+    local MAX_OPEN_HEIGHT = 999999999999999999999 
 
     function Dropdown:open()
         open = true
@@ -1231,7 +1231,7 @@ function Module:create_dropdown()
     optionTemplate.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.BackgroundTransparency = 1
     optionTemplate.BorderSizePixel = 0
-    optionTemplate.Size = UDim2.new(1, 0, 0, OPTION_HEIGHT) 
+    optionTemplate.Size = UDim2.new(0, 400, 0, 13)
     optionTemplate.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     optionTemplate.TextColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.TextSize = 14
@@ -1353,8 +1353,7 @@ function Module:create_dropdown()
         self:updateText()
     end
 
-
-    local MAX_OPEN_HEIGHT = 999999999999 
+    local MAX_OPEN_HEIGHT = 999999999999999999999 
 
     function Dropdown:open()
         open = true
@@ -1363,7 +1362,6 @@ function Module:create_dropdown()
         TweenService:Create(dropdown, TweenInfo.new(0.25), {Size = UDim2.new(BASE_WIDTH,0,0, 40 + targetHeight)}):Play()
         TweenService:Create(Arrow, TweenInfo.new(0.25), {Rotation = 180}):Play()
     end
-
 
     function Dropdown:close()
         open = false
@@ -1388,6 +1386,7 @@ function Module:create_dropdown()
 
     return Dropdown
 end
+
 
 
         function Module:create_textbox()
