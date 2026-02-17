@@ -1,6 +1,6 @@
 
 
---// govorgub123
+--// govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1588,7 +1588,6 @@ end
         end)
     end
 
-
 function Module:create_keybind()
     local section = self.section == 'left' and left_section
 
@@ -1685,8 +1684,6 @@ function Module:create_keybind()
         end
     end)
 end
-
-            end
             return Module
         end
         return Tab
