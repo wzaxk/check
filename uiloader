@@ -1,5 +1,5 @@
 
---// !govorgub || guns.lol/govorgub
+--// !govorgub! || guns.lol/govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1055,7 +1055,10 @@ function Module:create_multidropdown()
     optionTemplate.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.BackgroundTransparency = 1
     optionTemplate.BorderSizePixel = 0
-    optionTemplate.Size = UDim2.new(0, 176, 0, 13)
+    optionTemplate.Size = UDim2.new(1, 0, 0, 23) 
+	optionTemplate.TextWrapped = true
+	optionTemplate.TextXAlignment = Enum.TextXAlignment.Left
+	optionTemplate.TextTruncate = Enum.TextTruncate.None
     optionTemplate.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     optionTemplate.TextColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.TextSize = 14
@@ -1229,7 +1232,10 @@ function Module:create_dropdown()
     optionTemplate.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.BackgroundTransparency = 1
     optionTemplate.BorderSizePixel = 0
-    optionTemplate.Size = UDim2.new(0, 176, 0, 13)
+    optionTemplate.Size = UDim2.new(1, 0, 0, 23) 
+	optionTemplate.TextWrapped = true
+	optionTemplate.TextXAlignment = Enum.TextXAlignment.Left
+	optionTemplate.TextTruncate = Enum.TextTruncate.None 
     optionTemplate.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     optionTemplate.TextColor3 = Color3.fromRGB(255, 255, 255)
     optionTemplate.TextSize = 14
