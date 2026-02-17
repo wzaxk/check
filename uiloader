@@ -1,5 +1,5 @@
 
---// @govorgub || guns.lol/govorgub
+--// !govorgub || guns.lol/govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1080,15 +1080,17 @@ function Module:create_multidropdown()
     local BoxCorner = Instance.new("UICorner", Box)
     BoxCorner.CornerRadius = UDim.new(0, 6)
 
-    local TextLabel = Instance.new("TextLabel", Box)
-    TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-    TextLabel.Position = UDim2.new(0.03, 0, 0.5, 0)
-    TextLabel.Size = UDim2.new(1, -30, 1, 0)
-    TextLabel.BackgroundTransparency = 1
-    TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
-    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.TextSize = 14
-    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	local TextLabel = Instance.new("TextLabel", Box)
+	TextLabel.AnchorPoint = Vector2.new(0, 0.5)
+	TextLabel.Position = UDim2.new(0.03, 0, 0.5, 0)
+	TextLabel.Size = UDim2.new(1, -30, 1, 0) 
+	TextLabel.BackgroundTransparency = 1
+	TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
+	TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel.TextSize = 14
+	TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel.TextTruncate = Enum.TextTruncate.AtEnd  
+	TextLabel.TextWrapped = false
 
     local Arrow = Instance.new("ImageLabel", Box)
     Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1121,13 +1123,13 @@ function Module:create_multidropdown()
 
     Library.Flags[self.flag] = Dropdown
 
-    function Dropdown:updateText()
-        if #self.selectedOptions > 0 then
-            TextLabel.Text = table.concat(self.selectedOptions, ", ")
-        else
-            TextLabel.Text = self.name
-        end
-    end
+	function Dropdown:updateText()
+	    if self.selectedOptions and #self.selectedOptions > 0 then
+	        TextLabel.Text = table.concat(self.selectedOptions, ", ")
+	    else
+	        TextLabel.Text = self.name
+	    end
+	end
 
     function Dropdown:clearOptions()
         for _, child in ipairs(Options:GetChildren()) do
@@ -1252,15 +1254,17 @@ function Module:create_dropdown()
     local BoxCorner = Instance.new("UICorner", Box)
     BoxCorner.CornerRadius = UDim.new(0, 6)
 
-    local TextLabel = Instance.new("TextLabel", Box)
-    TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-    TextLabel.Position = UDim2.new(0.03, 0, 0.5, 0)
-    TextLabel.Size = UDim2.new(1, -30, 1, 0)
-    TextLabel.BackgroundTransparency = 1
-    TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
-    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.TextSize = 14
-    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	local TextLabel = Instance.new("TextLabel", Box)
+	TextLabel.AnchorPoint = Vector2.new(0, 0.5)
+	TextLabel.Position = UDim2.new(0.03, 0, 0.5, 0)
+	TextLabel.Size = UDim2.new(1, -30, 1, 0) 
+	TextLabel.BackgroundTransparency = 1
+	TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
+	TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel.TextSize = 14
+	TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel.TextTruncate = Enum.TextTruncate.AtEnd  
+	TextLabel.TextWrapped = false
 
     local Arrow = Instance.new("ImageLabel", Box)
     Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1293,9 +1297,13 @@ function Module:create_dropdown()
 
     Library.Flags[self.flag] = Dropdown
 
-    function Dropdown:updateText()
-        TextLabel.Text = self.selectedOption or self.name
-    end
+	function Dropdown:updateText()
+	    if self.selectedOptions and #self.selectedOptions > 0 then
+	        TextLabel.Text = table.concat(self.selectedOptions, ", ")
+	    else
+	        TextLabel.Text = self.name
+	    end
+	end
 
     function Dropdown:clearOptions()
         for _, child in ipairs(Options:GetChildren()) do
