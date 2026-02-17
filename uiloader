@@ -1,5 +1,5 @@
 
---// govorgub || guns.lol/govorgub
+--// @govorgub || guns.lol/govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -1137,25 +1137,36 @@ function Module:create_multidropdown()
 
     function Dropdown:RefreshOptions(newOptions)
         if newOptions then self.options = newOptions end
+    
+     
+        local filtered = {}
+        for _, selected in ipairs(self.selectedOptions or {}) do
+            if table.find(self.options, selected) then
+                table.insert(filtered, selected)
+            end
+        end
+        self.selectedOptions = filtered
+    
         self:clearOptions()
         list_size = 0
+    
         for _, value in ipairs(self.options) do
             list_size += OPTION_HEIGHT
             local btn = optionTemplate:Clone()
             btn.Parent = Options
             btn.Text = value
             btn.TextTransparency = table.find(self.selectedOptions, value) and 0 or 0.5
-
+    
             btn.MouseEnter:Connect(function()
                 TweenService:Create(btn, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
             end)
-
+    
             btn.MouseLeave:Connect(function()
                 if not table.find(self.selectedOptions, value) then
                     TweenService:Create(btn, TweenInfo.new(0.3), {TextTransparency = 0.5}):Play()
                 end
             end)
-
+    
             btn.MouseButton1Click:Connect(function()
                 local idx = table.find(self.selectedOptions, value)
                 if idx then table.remove(self.selectedOptions, idx)
@@ -1166,8 +1177,10 @@ function Module:create_multidropdown()
                 if self.callback then self.callback(self.selectedOptions) end
             end)
         end
+    
         self:updateText()
     end
+
 
     function Dropdown:open()
         open = true
@@ -1290,28 +1303,34 @@ function Module:create_dropdown()
         end
     end
 
-    function Dropdown:RefreshOptions(newOptions)
+     function Dropdown:RefreshOptions(newOptions)
         if newOptions then self.options = newOptions end
+    
+
+        if self.selectedOption and not table.find(self.options, self.selectedOption) then
+            self.selectedOption = nil
+        end
+    
         self:clearOptions()
         list_size = 0
-
+    
         for _, value in ipairs(self.options) do
             list_size += OPTION_HEIGHT
             local btn = optionTemplate:Clone()
             btn.Parent = Options
             btn.Text = value
             btn.TextTransparency = (value == self.selectedOption) and 0 or 0.5
-
+    
             btn.MouseEnter:Connect(function()
                 TweenService:Create(btn, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
             end)
-
+    
             btn.MouseLeave:Connect(function()
                 if btn.Text ~= self.selectedOption then
                     TweenService:Create(btn, TweenInfo.new(0.3), {TextTransparency = 0.5}):Play()
                 end
             end)
-
+    
             btn.MouseButton1Click:Connect(function()
                 self.selectedOption = value
                 Library.Flags[self.flag] = self
@@ -1320,9 +1339,10 @@ function Module:create_dropdown()
                 if self.callback then self.callback(value) end
             end)
         end
-
+    
         self:updateText()
     end
+
 
     function Dropdown:open()
         open = true
