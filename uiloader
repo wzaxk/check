@@ -1241,13 +1241,17 @@ function Module:create_multidropdown()
         self:update()
     end
 
-    Box.MouseButton1Click:Connect(function()
+Box.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 
+    or input.UserInputType == Enum.UserInputType.Touch then
         if open then
             Dropdown:close()
         else
             Dropdown:open()
         end
-    end)
+    end
+end)
+
 
     Dropdown:update()
     return Dropdown
