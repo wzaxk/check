@@ -98,6 +98,9 @@ function Library:open()
 end
 
 function Library:close()
+    if not Library.enabled then return end
+    Library.enabled = false
+
     TweenService:Create(self.Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
         Size = UDim2.new(0, 0, 0, 0)
     }):Play()
@@ -108,19 +111,16 @@ function Library:close()
 
     main_tween:Play()
     main_tween.Completed:Once(function()
-        if Library.enabled then return end
+        self.Container.Visible = false
+        self.Shadow.Visible = false
+        self.Mobile.Modal = false
 
-        if Container then
-            self.Container.Visible = false
-            self.Shadow.Visible = false
-            self.Mobile.Modal = false
-
-            if self.Mobile and self.Mobile:FindFirstChild("mobile_button") then
-                self.Mobile.mobile_button.Visible = true
-            end
+        if self.Mobile and self.Mobile:FindFirstChild("mobile_button") then
+            self.Mobile.mobile_button.Visible = true
         end
     end)
 end
+
 
 function Library:drag()
     if not Library.drag_position then
