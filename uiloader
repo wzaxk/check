@@ -169,9 +169,8 @@ function Library:new()
     Shadow.BorderSizePixel = 0
     Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
     if UserInputService.TouchEnabled then
-    Shadow.Size = UDim2.new(0.71, 0, 0.71, 0)
-    else
-        
+    	Shadow.Size = UDim2.new(0.71, 0, 0.71, 0)
+    else 
         Shadow.Size = UDim2.new(0.4, 0, 0.42, 0)
     end
 
@@ -253,7 +252,7 @@ function Library:new()
         SubTitle.Size = UDim2.new(1 - positionX, 0, 0, 14)
         SubTitle.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
         SubTitle.Text = subName
-        SubTitle.TextColor3 = Color3.fromRGB(170,170,170) -- серый
+        SubTitle.TextColor3 = Color3.fromRGB(170,170,170)
         SubTitle.TextSize = 12
         SubTitle.TextWrapped = true
         SubTitle.TextXAlignment = Enum.TextXAlignment.Left
