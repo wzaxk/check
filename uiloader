@@ -1,6 +1,6 @@
 
 
---// govorgub1234
+--// govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -74,17 +74,17 @@ Library.load_flags()
 Library.clear()
 
 function Library:open()
-	self.Container.Visible = true
-	self.Shadow.Visible = true
-	self.Mobile.Modal = true
+    self.Container.Visible = true
+    self.Shadow.Visible = true
+ 
 
-	TweenService:Create(self.Container, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
-		Size = UDim2.new(0, 0, 0, 0)
-	}):Play()
+    TweenService:Create(self.Container, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
+        Size = UDim2.new(0, 0, 0, 0)
+    }):Play()
 
-	TweenService:Create(self.Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
-		Size = UDim2.new(0, 0, 0, 0)
-	}):Play()
+    TweenService:Create(self.Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
+        Size = UDim2.new(0, 0, 0, 0)
+    }):Play()
 end
 
 function Library:close()
@@ -101,24 +101,23 @@ function Library:close()
     else
         containerSize = UDim2.new(0.35, 0, 0.35, 0)
     end
-	TweenService:Create(self.Container, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
-		Size = containerSize
-	}):Play()
+    local main_tween = TweenService:Create(self.Container, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
+        Size = containerSize
+    })
 
-	TweenService:Create(self.Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
-		Size = shadowSize
-	}):Play()
+    TweenService:Create(self.Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Circular, Enum.EasingDirection.InOut), {
+        Size = shadowSize
+    }):Play()
 
-	main_tween:Play()
-	main_tween.Completed:Once(function()
-		if Library.enabled then
-			return
-		end
-        self.Container.Visible = false
-		self.Shadow.Visible = false
-		self.Mobile.Modal = false
+    main_tween:Play()
+    main_tween.Completed:Once(function()
+        if Library.enabled then
+            return
+        end
+        self.Container.Visible = true
+    self.Shadow.Visible = true
 
-	end)
+    end)
 end
 
 function Library:drag()
@@ -151,6 +150,7 @@ function Library:visible()
         Library.close(self)
     end
 end
+
 function Library:new()
     local container = Instance.new("ScreenGui")
     container.Name = "cac"
@@ -168,10 +168,11 @@ function Library:new()
     Shadow.BorderSizePixel = 0
     Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
     if UserInputService.TouchEnabled then
-    	Shadow.Size = UDim2.new(0.71, 0, 0.71, 0)
+        Shadow.Size = UDim2.new(0.71, 0, 0.71, 0)
     else 
         Shadow.Size = UDim2.new(0.4, 0, 0.42, 0)
     end
+
     Shadow.ZIndex = 0
     Shadow.Image = "rbxassetid://17290899982"
 
@@ -184,12 +185,15 @@ function Library:new()
     Container.BorderSizePixel = 0
     Container.ClipsDescendants = true
     Container.Position = UDim2.new(0.5, 0, 0.5, 0)
+
     if UserInputService.TouchEnabled then
         Container.Size = UDim2.new(0.7, 0, 0.7, 0)
     else
+    
         Container.Size = UDim2.new(0.35, 0, 0.35, 0)
     end
 
+    
     local ContainerCorner = Instance.new("UICorner")
     ContainerCorner.CornerRadius = UDim.new(0, 20)
     ContainerCorner.Parent = container.Container
@@ -201,7 +205,7 @@ function Library:new()
     Top.BackgroundTransparency = 1.000
     Top.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Top.BorderSizePixel = 0
-    Top.Size = UDim2.new(1, 0, 0.08, 0)
+   Top.Size = UDim2.new(1, 0, 0.08, 0) 
     Top.Image = ""
 
     local Logo = Instance.new("ImageLabel")
@@ -217,8 +221,10 @@ function Library:new()
     Logo.Image = ""
     
     local positionX = 0.0938254446
+
     local mainName = getgenv().hubname or "ui-name"
     local subName = getgenv().hubsubname
+
 
     local Title = Instance.new("TextLabel")
     Title.Parent = Top
@@ -234,6 +240,7 @@ function Library:new()
     Title.TextWrapped = true
     Title.TextXAlignment = Enum.TextXAlignment.Left
 
+   
     if subName then
         local SubTitle = Instance.new("TextLabel")
         SubTitle.Parent = Top
@@ -249,6 +256,8 @@ function Library:new()
         SubTitle.TextWrapped = true
         SubTitle.TextXAlignment = Enum.TextXAlignment.Left
     end
+
+
 
     local Line = Instance.new("Frame")
     Line.Name = "Line"
@@ -271,23 +280,28 @@ function Library:new()
     layout.Padding = UDim.new(0, 6)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Parent = tabs
+
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         local contentHeight = layout.AbsoluteContentSize.Y
         local minHeight = tabs.AbsoluteSize.Y + 1
         tabs.CanvasSize = UDim2.new(0, 0, 0, math.max(contentHeight + 10, minHeight))
     end)
+
     tabs.Size = UDim2.new(0.284, -10, 0.91, 0)
     tabs.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
     tabs.ScrollBarThickness = 0
     tabs.Parent = container.Container
+
     local tabslist = Instance.new("UIListLayout")
     tabslist.Parent = tabs
     tabslist.HorizontalAlignment = Enum.HorizontalAlignment.Center
     tabslist.SortOrder = Enum.SortOrder.LayoutOrder
     tabslist.Padding = UDim.new(0, 9)
+
     local UIPadding = Instance.new("UIPadding")
     UIPadding.Parent = tabs
     UIPadding.PaddingTop = UDim.new(0, 15)
+
     local tabsCorner = Instance.new("UICorner")
     tabsCorner.Parent = tabs
 
@@ -299,7 +313,7 @@ function Library:new()
     mobile_button.Position = UDim2.new(0.0210955422, 0, 0.91790241, 0)
     mobile_button.Size = UDim2.new(0, 122, 0, 38)
     mobile_button.AutoButtonColor = false
-    mobile_button.Modal = false
+    
     mobile_button.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
     mobile_button.Text = ""
     mobile_button.TextColor3 = Color3.fromRGB(0, 0, 0)
@@ -353,15 +367,9 @@ function Library:new()
     Icon.Position = UDim2.new(0.268000007, 0, 0.5, 0)
     Icon.Size = UDim2.new(0, 15, 0, 15)
     Icon.Image = "rbxassetid://17183279677"
-
     getgenv().CloseUi = container
-
-    Library.dragging = false
-    Library.drag_position = nil
-    Library.start_position = nil
-
-    container.Container.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    container.Container.InputBegan:Connect(function(input: InputObject)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             Library.dragging = true
             Library.drag_position = input.Position
             Library.start_position = container.Container.Position
@@ -376,29 +384,52 @@ function Library:new()
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if Library.dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - Library.drag_position
-            container.Container.Position = Library.start_position + UDim2.new(0, delta.X, 0, delta.Y)
+    UserInputService.InputChanged:Connect(function(input: InputObject)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            Library.drag({
+                input = input,
+                container = container
+            })
         end
     end)
 
-    local isSettingKeybind = false
-    UserInputService.InputBegan:Connect(function(input, process)
-        if process then return end
-        if isSettingKeybind then return end
-        if not Library.exist() then return end
+local isSettingKeybind = false
+UserInputService.InputBegan:Connect(function(input, process)
+    if process then return end
+    if isSettingKeybind then return end
+    if not Library.exist() then return end
 
-        local chosenKey = Library.Flags.toggleui or "H"
-        if input.KeyCode == Enum.KeyCode[chosenKey] then
-            Library.visible(container)
-        end
-    end)
+    local chosenKey = Library.Flags.toggleui or "H"
+    if input.KeyCode == Enum.KeyCode[chosenKey] then
+        Library.visible(container)
+    end
+end)
+
 
     mobile_button.MouseButton1Click:Connect(function()
         Library.visible(container)
     end)
-end
+
+    local Tab = {}
+
+    function Tab:update_sections()
+        self.left_section.Visible = true
+        
+
+        for _, object in container.Container:GetChildren() do
+            if not object.Name:find("Section") then
+                continue
+            end
+
+            if object == self.left_section then 
+                continue
+            end
+
+            object.Visible = false
+        end
+    end
+
+
     function Tab:open_tab()
         Tab.update_sections({
             left_section = self.left_section
