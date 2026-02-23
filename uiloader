@@ -1,6 +1,6 @@
 
 
---// govorgub
+--// @govorgub
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -931,145 +931,167 @@ end)
                 task.wait()
             end
         end
+		function Module:create_slider()
+			local section = self.section == 'left' and left_section or right_section
+			local UserInputService = game:GetService("UserInputService")
+			local TweenService = game:GetService("TweenService")
 
+			local slider = Instance.new("TextButton")
+			slider.BackgroundColor3 = Color3.fromRGB(27,28,33)
+			slider.Size = UDim2.new(0.96,0,0,50)
+			slider.AutoButtonColor = false
+			slider.Text = ""
+			slider.Parent = section
 
- function Module:create_slider()
-    local drag = false
-    local section = self.section == 'left' and left_section or right_section
+			local sliderCorner = Instance.new("UICorner")
+			sliderCorner.CornerRadius = UDim.new(0,10)
+			sliderCorner.Parent = slider
 
-    local slider = Instance.new("TextButton")
-    slider.Name = "Slider"
-    slider.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-    slider.BorderSizePixel = 0
-    slider.Size = UDim2.new(0.96, 0, 0, 50)
-    slider.AutoButtonColor = false
-    slider.Font = Enum.Font.SourceSans
-    slider.Text = ""
-    slider.TextColor3 = Color3.fromRGB(0, 0, 0)
-    slider.TextSize = 14
-    slider.Parent = section
+			local track = Instance.new("Frame")
+			track.Parent = slider
+			track.AnchorPoint = Vector2.new(0.5,0.5)
+			track.Position = UDim2.new(0.5,0,0.75,0)
+			track.Size = UDim2.new(1,-20,0,6)
+			track.BackgroundColor3 = Color3.fromRGB(40,40,40)
+			track.BorderSizePixel = 0
 
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = slider
+			local trackCorner = Instance.new("UICorner")
+			trackCorner.CornerRadius = UDim.new(1,0)
+			trackCorner.Parent = track
 
-    local Box = Instance.new("Frame")
-    Box.Name = "Box"
-    Box.Parent = slider
-    Box.AnchorPoint = Vector2.new(0.5, 0.5)
-    Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-    Box.BorderSizePixel = 0
-    Box.Position = UDim2.new(0.5, 0, 0.75, 0)
-    Box.Size = UDim2.new(1, -20, 0, 6)
+			local fill = Instance.new("Frame")
+			fill.Parent = track
+			fill.AnchorPoint = Vector2.new(0,0.5)
+			fill.Position = UDim2.new(0,0,0.5,0)
+			fill.Size = UDim2.new(0,0,1,0)
+			fill.BackgroundColor3 = Color3.fromRGB(120,120,120)
+			fill.BorderSizePixel = 0
 
-    local Glow = Instance.new("ImageLabel")
-    Glow.Name = "Glow"
-    Glow.Parent = Box
-    Glow.AnchorPoint = Vector2.new(0.5, 0.5)
-    Glow.BackgroundTransparency = 1
-    Glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Glow.Size = UDim2.new(1, 12, 0, 17)
-    Glow.ZIndex = 2
-    Glow.Image = "rbxassetid://17381990533"
+			local fillCorner = Instance.new("UICorner")
+			fillCorner.CornerRadius = UDim.new(1,0)
+			fillCorner.Parent = fill
 
-    local UIGradient = Instance.new("UIGradient")
-    UIGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 80))
-    }
-    UIGradient.Parent = Glow
+			local knob = Instance.new("Frame")
+			knob.Parent = track
+			knob.Size = UDim2.new(0,20,0,20)
+			knob.AnchorPoint = Vector2.new(0.5,0.5)
+			knob.Position = UDim2.new(0,0,0.5,0)
+			knob.BackgroundColor3 = Color3.fromRGB(160,160,160)
+			knob.BorderSizePixel = 0
 
-    local Fill = Instance.new("ImageLabel")
-    Fill.Name = "Fill"
-    Fill.Parent = Box
-    Fill.AnchorPoint = Vector2.new(0, 0.5)
-    Fill.BackgroundTransparency = 1
-    Fill.Position = UDim2.new(0, 0, 0.5, 0)
-    Fill.Size = UDim2.new(1, 0, 0, 6)
-    Fill.Image = "rbxassetid://17382033116"
+			local knobCorner = Instance.new("UICorner")
+			knobCorner.CornerRadius = UDim.new(1,0)
+			knobCorner.Parent = knob
 
-    local UIGradient_2 = Instance.new("UIGradient")
-    UIGradient_2.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 80))
-    }
-    UIGradient_2.Parent = Fill
+			local hole = Instance.new("Frame")
+			hole.Parent = knob
+			hole.AnchorPoint = Vector2.new(0.5,0.5)
+			hole.Position = UDim2.new(0.5,0,0.5,0)
+			hole.Size = UDim2.new(0.5,0,0.5,0)
+			hole.BackgroundColor3 = Color3.fromRGB(27,28,33)
+			hole.BorderSizePixel = 0
 
-    local Hitbox = Instance.new("TextButton")
-    Hitbox.Name = "Hitbox"
-    Hitbox.Parent = Box
-    Hitbox.AnchorPoint = Vector2.new(0.5, 0.5)
-    Hitbox.BackgroundTransparency = 1
-    Hitbox.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Hitbox.Size = UDim2.new(1, 8, 0, 13)
-    Hitbox.ZIndex = 3
-    Hitbox.AutoButtonColor = false
-    Hitbox.Font = Enum.Font.SourceSans
-    Hitbox.Text = ""
-    Hitbox.TextColor3 = Color3.fromRGB(0, 0, 0)
-    Hitbox.TextSize = 14
+			local holeCorner = Instance.new("UICorner")
+			holeCorner.CornerRadius = UDim.new(1,0)
+			holeCorner.Parent = hole
 
-    local TextLabel = Instance.new("TextLabel")
-    TextLabel.Parent = slider
-    TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-    TextLabel.BackgroundTransparency = 1
-    TextLabel.Position = UDim2.new(0, 17, 0.35, 0)
-    TextLabel.Size = UDim2.new(1, -20, 0, 15)
-    TextLabel.ZIndex = 2
-    TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
-    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.TextScaled = true
-    TextLabel.TextWrapped = true
-    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+			local label = Instance.new("TextLabel")
+			label.Parent = slider
+			label.AnchorPoint = Vector2.new(0,0.5)
+			label.Position = UDim2.new(0,17,0.35,0)
+			label.Size = UDim2.new(1,-20,0,15)
+			label.BackgroundTransparency = 1
+			label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
+			label.TextColor3 = Color3.fromRGB(255,255,255)
+			label.TextScaled = true
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Text = self.name
 
-    local Number = Instance.new("TextLabel")
-    Number.Name = "Number"
-    Number.Parent = slider
-    Number.AnchorPoint = Vector2.new(0.5, 0.5)
-    Number.BackgroundTransparency = 1
-    Number.Position = UDim2.new(0.9, 0, 0.35, 0)
-    Number.Size = UDim2.new(0.1, 0, 0, 15)
-    Number.ZIndex = 2
-    Number.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
-    Number.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Number.TextScaled = true
-    Number.TextWrapped = true
-    Number.TextXAlignment = Enum.TextXAlignment.Right
+			local number = Instance.new("TextLabel")
+			number.Parent = slider
+			number.AnchorPoint = Vector2.new(0.5,0.5)
+			number.Position = UDim2.new(0.9,0,0.35,0)
+			number.Size = UDim2.new(0.1,0,0,15)
+			number.BackgroundTransparency = 1
+			number.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
+			number.TextColor3 = Color3.fromRGB(255,255,255)
+			number.TextScaled = true
+			number.TextXAlignment = Enum.TextXAlignment.Right
 
-    TextLabel.Text = self.name
+			local step = self.minimum_value < 1 and self.minimum_value or 1
 
-    local saved_value = Library.Flags[self.flag]
-    if saved_value ~= nil then
-        Number.Text = saved_value
-        Fill.Size = UDim2.new((saved_value - self.minimum_value) / (self.maximum_value - self.minimum_value), 0, 0, 6)
-    else
-        Library.Flags[self.flag] = self.value
-        Number.Text = self.value
-        Fill.Size = UDim2.new((self.value - self.minimum_value) / (self.maximum_value - self.minimum_value), 0, 0, 6)
-    end
+			local function roundValue(val)
+				local rounded = math.floor((val - self.minimum_value)/step + 0.5)*step + self.minimum_value
+				rounded = math.clamp(rounded,self.minimum_value,self.maximum_value)
 
-    self.callback(Library.Flags[self.flag])
+				if step < 1 then
+					rounded = tonumber(string.format("%.3f", rounded))
+				else
+					rounded = math.floor(rounded)
+				end
 
-    slider.Box.Hitbox.MouseButton1Down:Connect(function()
-        if Library.slider_drag then return end
-        Module.slider_loop({
-            slider = slider,
-            flag = self.flag,
-            callback = self.callback,
-            maximum_value = self.maximum_value,
-            minimum_value = self.minimum_value,
-        })
-    end)
+				return rounded
+			end
 
-    UserInputService.InputEnded:Connect(function(input, processed)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Library.slider_drag = false
-            Library.save_flags()
-        end
-    end)
-end
+			local function updateFromX(x)
+				local percent = math.clamp((x - track.AbsolutePosition.X)/track.AbsoluteSize.X,0,1)
 
+				fill.Size = UDim2.new(percent,0,1,0)
+				knob.Position = UDim2.new(percent,0,0.5,0)
 
+				local raw = self.minimum_value + percent*(self.maximum_value-self.minimum_value)
+				local final = roundValue(raw)
+
+				Library.Flags[self.flag] = final
+				number.Text = final
+				self.callback(final)
+			end
+
+			Library.Flags[self.flag] = Library.Flags[self.flag] or self.value
+
+			local startPercent = (Library.Flags[self.flag]-self.minimum_value)/(self.maximum_value-self.minimum_value)
+			fill.Size = UDim2.new(startPercent,0,1,0)
+			knob.Position = UDim2.new(startPercent,0,0.5,0)
+			number.Text = Library.Flags[self.flag]
+
+			local dragging = false
+
+			local function animate(size)
+				TweenService:Create(
+					knob,
+					TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+					{Size = size}
+				):Play()
+			end
+
+			track.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = true
+					animate(UDim2.new(0,22,0,22))
+					updateFromX(UserInputService:GetMouseLocation().X)
+				end
+			end)
+
+			knob.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = true
+					animate(UDim2.new(0,22,0,22))
+				end
+			end)
+
+			UserInputService.InputChanged:Connect(function(input)
+				if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+					updateFromX(UserInputService:GetMouseLocation().X)
+				end
+			end)
+
+			UserInputService.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					dragging = false
+					animate(UDim2.new(0,20,0,20))
+				end
+			end)
+		end
                 function Module:create_sidedropdown()
                     local section = self.section == 'left' and left_section or right_section
                     local list_size = 6
@@ -1123,7 +1145,7 @@ end
                     TextLabel.BackgroundTransparency = 1
                     TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
                     TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    TextLabel.TextScaled = false
+                    TextLabel.TextScaled = true
                     TextLabel.TextSize = 15
                     TextLabel.TextWrapped = true
                     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -2003,7 +2025,5 @@ end
         end
         return Tab
     end
-
-
 
 return Library
