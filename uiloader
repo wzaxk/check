@@ -1,7 +1,7 @@
-
-
---// govorgub
---// not for sharing
+-- =================================================
+-- Author: govorgub
+-- License: Private / Not for redistribution
+-- =================================================
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
@@ -24,29 +24,285 @@ connections = {};
 }
 
 
+getgenv().UIElements = {} 
+
+local BaseColors = {
+    Dark = Color3.fromRGB(27, 28, 33),
+    Sapphire = Color3.fromRGB(24, 36, 85)
+}
+
+local Themes = {
+    Dark = {
+        -- base
+        main = BaseColors.Dark,
+
+        --tabs
+        tabcolor = BaseColors.Dark,
+        tabselectedcolor = ColorSequence.new{
+            ColorSequenceKeypoint.new(0.00, Color3.fromRGB(52, 117, 130)),
+            ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 76, 83))
+        },
+        tabtextcolor = Color3.fromRGB(255, 255, 255),
+
+        --ui
+        uicontainer = Color3.fromRGB(19, 20, 24),
+        uiline = BaseColors.Dark,
+        shadowcolor = Color3.fromRGB(0,0,0),
+
+        --toggles
+        togglecoloron = Color3.fromRGB(65,130,140),
+        togglecoloroff = Color3.fromRGB(22,23,27),
+        togglecolor = BaseColors.Dark,
+
+        --button
+        buttoncolor = BaseColors.Dark,
+		originalColor = BaseColors.Dark,
+        --checkbox
+        checkboxcolor = BaseColors.Dark,
+		checkboxturnon = ColorSequence.new{
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 85, 95)), 
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(65,130,140))   
+			},
+        checkboxturnoff = Color3.fromRGB(22, 23, 27),
+
+		--dropdown
+		dropdowncolor = Color3.fromRGB(27, 28, 33),
+		dropdownboxscolor = Color3.fromRGB(22, 23, 27),
+		dropdownoptionscolor = Color3.fromRGB(22, 23, 27),
+		--multidropdown
+		multidropdowncolor = Color3.fromRGB(27, 28, 33),
+		multidropdownboxcolor = Color3.fromRGB(22, 23, 27),
+		multidropdownoptioncolor = Color3.fromRGB(22, 23, 27), 
+		--sidedropdown
+		sidedropdowncolor = Color3.fromRGB(27, 28, 33),
+		sidedropdownboxcolor = Color3.fromRGB(22, 23, 27),
+		sidedropdownoptionscolor = Color3.fromRGB(22, 23, 27),
+		--multisidedropdown
+		multisidedropdown = Color3.fromRGB(27, 28, 33),
+		multisidedropdownBox = Color3.fromRGB(22, 23, 27), 
+		multisidedropdownOptions = Color3.fromRGB(22, 23, 27), 
+
+        --slider
+        slider = BaseColors.Dark,
+		trackcolor = Color3.fromRGB(40,40,40),
+		sliderfill = Color3.fromRGB(90,90,90),
+		knob = Color3.fromRGB(120,120,120),
+        --input
+        inputButton = BaseColors.Dark,
+        InputBox = Color3.fromRGB(22, 23, 27),
+
+        --keybind
+        Keybind = BaseColors.Dark,
+        KeybindBox = Color3.fromRGB(22, 23, 27),
+    },
+
+    Sapphire = {
+        -- base
+        main = BaseColors.Sapphire,
+
+        --tabs
+        tabcolor = BaseColors.Sapphire,
+        tabselectedcolor = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(58, 85, 175)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 55, 125))
+        },
+        tabtextcolor = Color3.fromRGB(255, 255, 255),
+
+        --ui
+        uicontainer = Color3.fromRGB(12, 20, 55),
+        uiline = Color3.fromRGB(18, 26, 48),
+        shadowcolor = Color3.fromRGB(120,170,255),
+
+        --toggles
+        togglecoloron = Color3.fromRGB(59, 130, 246),
+        togglecoloroff = Color3.fromRGB(12, 20, 55),
+        togglecolor = BaseColors.Sapphire,
+
+        --button
+        buttoncolor = BaseColors.Sapphire,
+		originalColor = BaseColors.Sapphire,
+
+        --checkbox
+        checkboxcolor = BaseColors.Sapphire,
+        checkboxturnon = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(37, 99, 235)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(59, 130, 246))
+        },
+        checkboxturnoff = Color3.fromRGB(12, 20, 55),
+		--dropdown
+		dropdowncolor = BaseColors.Sapphire,
+		dropdownboxscolor = Color3.fromRGB(12, 20, 55),
+		dropdownoptionscolor = Color3.fromRGB(12, 20, 55),
+		--multidropdown
+		multidropdowncolor = BaseColors.Sapphire,
+		multidropdownboxcolor = Color3.fromRGB(12, 20, 55),
+		multidropdownoptioncolor = Color3.fromRGB(12, 20, 55),
+		--sidedropdown
+		sidedropdowncolor = BaseColors.Sapphire,
+		sidedropdownboxcolor = Color3.fromRGB(12, 20, 55),
+		sidedropdownoptionscolor = Color3.fromRGB(12, 20, 55),
+		--multisidedropdown
+		multisidedropdown =BaseColors.Sapphire,
+		multisidedropdownBox = Color3.fromRGB(12, 20, 55),
+		multisidedropdownOptions = Color3.fromRGB(12, 20, 55),
+        --slider
+        slider = BaseColors.Sapphire,
+		trackcolor = Color3.fromRGB(15, 23, 42),
+		sliderfill = Color3.fromRGB(30, 64, 175),
+		knob = Color3.fromRGB(37, 99, 235),
+        --input
+        inputButton = BaseColors.Sapphire,
+        InputBox = Color3.fromRGB(12, 20, 55),
+
+        --keybind
+        Keybind = BaseColors.Sapphire,
+        KeybindBox = Color3.fromRGB(12, 20, 55),
+    },
+}
+function ApplyTheme(name)
+    local theme = Themes[name] or Themes.Dark
+
+    -- Сохраняем глобальные цвета
+    for key, value in pairs(theme) do
+        getgenv()[key] = value
+    end
+
+    local TweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+    for _, obj in pairs(getgenv().UIElements) do
+        -- === SWITCH ===
+        if obj.Name == "Switch" then
+            -- если State ещё nil, ставим false
+            local isOn = obj:GetAttribute("State")
+            if isOn == nil then isOn = false end
+
+            -- ставим цвет через Tween (если хочешь анимацию)
+            TweenService:Create(obj, tweenInfo, {
+                BackgroundColor3 = isOn and getgenv().togglecoloron or getgenv().togglecoloroff
+            }):Play()
+        end
+
+        -- === КНОПКИ, СЛАЙДЕРЫ, БОКСЫ ===
+        if obj.Name == "Button" and getgenv().buttoncolor then
+            obj.BackgroundColor3 = getgenv().buttoncolor
+        end
+        if obj.Name == "slider" and getgenv().slider then
+            obj.BackgroundColor3 = getgenv().slider
+        end
+        if obj.Name == "Box1" and getgenv().multidropdownboxcolor then
+            obj.BackgroundColor3 = getgenv().multidropdownboxcolor
+        end
+        if obj.Name == "Options1" and getgenv().multidropdownoptioncolor then
+            obj.BackgroundColor3 = getgenv().multidropdownoptioncolor
+        end
+        if obj.Name == "multisidedropdownBox" and getgenv().multisidedropdownBox then
+            obj.BackgroundColor3 = getgenv().multisidedropdownBox
+        end
+        if obj.Name == "multisidedropdown" and getgenv().multisidedropdown then
+            obj.BackgroundColor3 = getgenv().multisidedropdown
+        end
+        if obj.Name == "multisidedropdownOptions" and getgenv().multisidedropdownOptions then
+            obj.BackgroundColor3 = getgenv().multisidedropdownOptions
+        end
+        if obj.Name == "dropdown1" and getgenv().multidropdowncolor then
+            obj.BackgroundColor3 = getgenv().multidropdowncolor
+        end
+        if obj.Name == "SideBox" and getgenv().sidedropdownboxcolor then
+            obj.BackgroundColor3 = getgenv().sidedropdownboxcolor
+        end
+        if obj.Name == "SideDropdown" and getgenv().sidedropdowncolor then
+            obj.BackgroundColor3 = getgenv().sidedropdowncolor
+        end
+        if obj.Name == "SideOptions" and getgenv().sidedropdownoptionscolor then
+            obj.BackgroundColor3 = getgenv().sidedropdownoptionscolor
+        end
+        if obj.Name == "Dropdown" and getgenv().dropdowncolor then
+            obj.BackgroundColor3 = getgenv().dropdowncolor
+        end
+        if obj.Name == "Box" and getgenv().dropdownboxscolor then
+            obj.BackgroundColor3 = getgenv().dropdownboxscolor
+        end
+        if obj.Name == "Options" and getgenv().dropdownoptionscolor then
+            obj.BackgroundColor3 = getgenv().dropdownoptionscolor
+        end
+        if obj.Name == "trackcolor" and getgenv().trackcolor then
+            obj.BackgroundColor3 = getgenv().trackcolor
+        end
+        if obj.Name == "sliderfill" and getgenv().sliderfill then
+            obj.BackgroundColor3 = getgenv().sliderfill
+        end
+        if obj.Name == "knob" and getgenv().knob then
+            obj.BackgroundColor3 = getgenv().knob
+        end
+        if obj.Name == "Input" and getgenv().inputButton then
+            obj.BackgroundColor3 = getgenv().inputButton
+        end
+        if obj.Name == "InputBox" and getgenv().InputBox then
+            obj.BackgroundColor3 = getgenv().InputBox
+        end
+        if obj.Name == "Keybind" and getgenv().Keybind then
+            obj.BackgroundColor3 = getgenv().Keybind
+        end
+        if obj.Name == "KeybindBox" and getgenv().KeybindBox then
+            obj.BackgroundColor3 = getgenv().KeybindBox
+        end
+        if obj.Name == "Checkbox" and getgenv().checkboxturnoff then
+            obj.BackgroundColor3 = getgenv().checkboxturnoff
+        end
+        if obj.Name == "Toggle" and getgenv().togglecolor then
+            obj.BackgroundColor3 = getgenv().togglecolor
+        end
+        if obj.Name == "Checkbox1" and getgenv().checkboxcolor then
+            obj.BackgroundColor3 = getgenv().checkboxcolor
+        end
+        if obj.Name == "Container" and getgenv().uicontainer then
+            obj.BackgroundColor3 = getgenv().uicontainer
+        end
+        if obj.Name == "Line" and getgenv().uiline then
+            obj.BackgroundColor3 = getgenv().uiline
+        end
+        if (obj:IsA("TextButton") or obj:IsA("TextLabel")) and getgenv().tabtextcolor then
+            obj.TextColor3 = getgenv().tabtextcolor
+        end
+        if obj:IsA("TextButton") and obj.Name == "Tab" and getgenv().tabcolor then
+            obj.BackgroundColor3 = getgenv().tabcolor
+        end
+        if obj:IsA("UIGradient") and getgenv().tabselectedcolor and obj.Name == "tabselectedcolor" then
+            obj.Color = getgenv().tabselectedcolor
+        end
+        if obj:IsA("UIGradient") and obj.Parent and obj.Name == "checkboxturnon" and getgenv().checkboxturnon then
+            obj.Color = getgenv().checkboxturnon
+        end
+        if obj:IsA("ImageLabel") and obj.Name == "Shadow" and getgenv().shadowcolor then
+            obj.ImageColor3 = getgenv().shadowcolor
+        end
+    end
+end
+
 if not isfolder("cac hub") then
     makefolder("cac hub")
 end
 
 function Library:disconnect()
-for _, value in Library.connections do
-if not Library.connections[value] then
-continue
-end
+	for _, value in Library.connections do
+		if not Library.connections[value] then
+			continue
+		end
 
-Library.connections[value]:Disconnect()
-Library.connections[value] = nil
-end
+		Library.connections[value]:Disconnect()
+		Library.connections[value] = nil
+	end
 end
 
 function Library:clear()
-for _, object in CoreGui:GetChildren() do
-if object.Name ~= "cac" then
-continue
-end
+	for _, object in CoreGui:GetChildren() do
+		if object.Name ~= "cac" then
+			continue
+		end
 
-object:Destroy()
-end
+		object:Destroy()
+	end
 end
 
 function Library:exist()
@@ -93,7 +349,7 @@ function Library:close()
     if UserInputService.TouchEnabled then
         shadowSize = UDim2.new(0.71, 0, 0.71, 0)
     else
-        shadowSize = UDim2.new(0.4, 0, 0.42, 0)
+        shadowSize = UDim2.new(0.395, 0, 0.42, 0)
     end
 
     local containerSize
@@ -171,21 +427,25 @@ function Library:new()
     if UserInputService.TouchEnabled then
         Shadow.Size = UDim2.new(0.71, 0, 0.71, 0)
     else 
-        Shadow.Size = UDim2.new(0.4, 0, 0.42, 0)
+        Shadow.Size = UDim2.new(0.395, 0, 0.42, 0)
     end
 
     Shadow.ZIndex = 0
     Shadow.Image = "rbxassetid://17290899982"
+	Shadow.ImageColor3 = getgenv().shadowcolor or Color3.fromRGB(0,0,0)
+	table.insert(getgenv().UIElements, Shadow)
 
     local Container = Instance.new("Frame")
     Container.Name = "Container"
     Container.Parent = container
     Container.AnchorPoint = Vector2.new(0.5, 0.5)
-    Container.BackgroundColor3 = Color3.fromRGB(19, 20, 24)
+    Container.BackgroundColor3 = getgenv().uicontainer or Color3.fromRGB(19, 20, 24)
     Container.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Container.BorderSizePixel = 0
     Container.ClipsDescendants = true
     Container.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+	table.insert(getgenv().UIElements, Container)
 
     if UserInputService.TouchEnabled then
         Container.Size = UDim2.new(0.7, 0, 0.7, 0)
@@ -263,11 +523,12 @@ function Library:new()
     local Line = Instance.new("Frame")
     Line.Name = "Line"
     Line.Parent = Container
-    Line.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+    Line.BackgroundColor3 = getgenv().uiline or Color3.fromRGB(27, 28, 33)
     Line.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Line.BorderSizePixel = 0
-    Line.Position = UDim2.new(0.296137333, 0, 0.0915492922, 0)
-    Line.Size = UDim2.new(0, 2, 0, 387)
+    Line.Position = UDim2.new(0.296137333, 0, 0.0975492922, 0)
+    Line.Size = UDim2.new(0, 2, 0, 357)
+	table.insert(getgenv().UIElements, Line)
 
     local tabs = Instance.new("ScrollingFrame")
     tabs.Name = "Tabs"
@@ -483,7 +744,7 @@ end)
   function Tab:create_tab(name, iconId)
          local tab = Instance.new("TextButton")
         tab.Name = "Tab"
-        tab.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+        tab.BackgroundColor3 = getgenv().tabcolor or Color3.fromRGB(27, 28, 33)
         tab.BorderColor3 = Color3.fromRGB(0, 0, 0)
         tab.BorderSizePixel = 0
         tab.Size = UDim2.new(1, 0, 0, 40)
@@ -494,6 +755,8 @@ end)
         tab.TextColor3 = Color3.fromRGB(0, 0, 0)
         tab.TextSize = 14.000
         tab.Parent = tabs
+		table.insert(getgenv().UIElements, tab)
+
 
         local tabCorner = Instance.new("UICorner")
         tabCorner.CornerRadius = UDim.new(0, 5)
@@ -520,12 +783,13 @@ end)
         TextLabel.BackgroundTransparency = 1
         TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
         TextLabel.Text = name
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TextLabel.TextColor3 = getgenv().tabtextcolor or Color3.fromRGB(255, 255, 255)
         TextLabel.TextScaled = true
         TextLabel.TextWrapped = true
         TextLabel.TextXAlignment = Enum.TextXAlignment.Left
         TextLabel.TextTransparency = 0.3
         TextLabel.ZIndex = 3
+		table.insert(getgenv().UIElements, TextLabel)
 
 
         local Glow = Instance.new("ImageLabel")
@@ -537,7 +801,7 @@ end)
         Glow.BorderColor3 = Color3.fromRGB(0, 0, 0)
         Glow.BorderSizePixel = 0
         Glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Glow.Size = UDim2.new(0, 190, 0, 53)
+        Glow.Size = UDim2.new(1, 0, 0, 40)
         Glow.Image = "rbxassetid://17290723539"
         Glow.ImageTransparency = 1.000
 
@@ -550,16 +814,18 @@ end)
         Fill.BorderColor3 = Color3.fromRGB(0, 0, 0)
         Fill.BorderSizePixel = 0
         Fill.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Fill.Size = UDim2.new(1, 0, 0, 40)
+        Fill.Size = UDim2.new(1, 0, 0.01, 40)
         Fill.ZIndex = 2
         local UICorner_2 = Instance.new("UICorner")
-        UICorner_2.CornerRadius = UDim.new(0, 10)
+        UICorner_2.CornerRadius = UDim.new(0, 6)
         UICorner_2.Parent = Fill
 
         local UIGradient = Instance.new("UIGradient")
-        UIGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(66, 89, 182)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(37, 57, 137))}
+		UIGradient.Name="tabselectedcolor"
+        UIGradient.Color = getgenv().tabselectedcolor or ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(66, 89, 182)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(37, 57, 137))}
         UIGradient.Rotation = 20
         UIGradient.Parent = Fill
+		table.insert(getgenv().UIElements, UIGradient)
 
          local left_section = Instance.new("ScrollingFrame")
         left_section.Name = "LeftSection"
@@ -685,24 +951,27 @@ end)
 			local toggle = Instance.new("TextButton")
 			toggle.Name = "Toggle"
 			toggle.Parent = section
-			toggle.BackgroundColor3 = Color3.fromRGB(27,28,33)
+			toggle.BackgroundColor3 = getgenv().togglecolor or Color3.fromRGB(27,28,33)
 			toggle.BorderSizePixel = 0
 			toggle.Position = UDim2.new(0.02,0,0,37)
 			toggle.Size = UDim2.new(0.96,0,0,50)
 			toggle.AutoButtonColor = false
 			toggle.Text = ""
+			table.insert(getgenv().UIElements, toggle)
 
 			local UICorner = Instance.new("UICorner")
 			UICorner.CornerRadius = UDim.new(0,10)
 			UICorner.Parent = toggle
 
 			local Switch = Instance.new("Frame")
+			Switch.Name = "Switch"
 			Switch.Parent = toggle
 			Switch.AnchorPoint = Vector2.new(1,0.5)
 			Switch.Position = UDim2.new(1,-17,0.5,0)
 			Switch.Size = UDim2.new(0,36,0,18)
-			Switch.BackgroundColor3 = Color3.fromRGB(22,23,27)
+			Switch.BackgroundColor3 = Color3.fromRGB(23,23,27)
 			Switch.BorderSizePixel = 0
+			table.insert(getgenv().UIElements, Switch)
 
 			local SwitchCorner = Instance.new("UICorner")
 			SwitchCorner.CornerRadius = UDim.new(1,0)
@@ -768,34 +1037,35 @@ end)
 			ToggleObject.callback = self.callback
 			ToggleObject.flag = self.flag
 
-			function ToggleObject:UpdateToggle(newState,skipCallback)
-				if newState ~= nil then
-					self.state = newState
-				else
-					self.state = not self.state
-				end
+		function ToggleObject:UpdateToggle(newState, skipCallback) 
+	if newState ~= nil then
+		self.state = newState
+	else
+		self.state = not self.state
+	end
 
-				local TweenService = game:GetService("TweenService")
-				local tweenInfo = TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out)
+	-- ВАЖНО: сохраняем в Attribute
+	Switch:SetAttribute("State", self.state)
 
-				if self.state then
-					TweenService:Create(Circle,tweenInfo,{Position = UDim2.new(1,-16,0.5,0)}):Play()
-					TweenService:Create(Switch,tweenInfo,{BackgroundColor3 = Color3.fromRGB(0,200,100)}):Play()
-					--TweenService:Create(Glow,tweenInfo,{ImageTransparency = 0}):Play()
-				else
-					TweenService:Create(Circle,tweenInfo,{Position = UDim2.new(0,2,0.5,0)}):Play()
-					TweenService:Create(Switch,tweenInfo,{BackgroundColor3 = Color3.fromRGB(22,23,27)}):Play()
-				--	TweenService:Create(Glow,tweenInfo,{ImageTransparency = 1}):Play()
-				end
+	local TweenService = game:GetService("TweenService")
+	local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-				if Library.save_flags then
-					Library.save_flags()
-				end
+	if self.state then
+		TweenService:Create(Circle, tweenInfo, {Position = UDim2.new(1, -16, 0.5, 0)}):Play()
+		TweenService:Create(Switch, tweenInfo, {BackgroundColor3 = getgenv().togglecoloron or Color3.fromRGB(65,130,140)}):Play()
+	else
+		TweenService:Create(Circle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, 0)}):Play()
+		TweenService:Create(Switch, tweenInfo, {BackgroundColor3 = getgenv().togglecoloroff or Color3.fromRGB(60, 64, 72)}):Play()
+	end
 
-				if not skipCallback and self.callback then
-					self.callback(self.state)
-				end
-			end
+	if Library.save_flags then
+		Library.save_flags()
+	end
+
+	if not skipCallback and self.callback then
+		self.callback(self.state)
+	end
+end
 
 			Library.Flags = Library.Flags or {}
 			Library.Flags[self.flag] = ToggleObject
@@ -810,31 +1080,33 @@ end)
      function Module:create_checkbox()
 			local section = left_section
 
-			local toggle = Instance.new("TextButton")
-			toggle.Name = "Toggle"
-			toggle.Parent = section
-			toggle.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-			toggle.BorderSizePixel = 0
-			toggle.Position = UDim2.new(0.02, 0, 0, 37)
-			toggle.Size = UDim2.new(0.96, 0, 0, 50)
-			toggle.AutoButtonColor = false
-			toggle.Font = Enum.Font.SourceSans
-			toggle.Text = ""
-			toggle.TextColor3 = Color3.fromRGB(0, 0, 0)
-			toggle.TextSize = 14
+			local checkbox = Instance.new("TextButton")
+			checkbox.Name = "Checkbox1"
+			checkbox.Parent = section
+			checkbox.BackgroundColor3 = getgenv().tabcolor or Color3.fromRGB(27, 28, 33)
+			checkbox.BorderSizePixel = 0
+			checkbox.Position = UDim2.new(0.02, 0, 0, 37)
+			checkbox.Size = UDim2.new(0.96, 0, 0, 50)
+			checkbox.AutoButtonColor = false
+			checkbox.Font = Enum.Font.SourceSans
+			checkbox.Text = ""
+			checkbox.TextColor3 = Color3.fromRGB(0, 0, 0)
+			checkbox.TextSize = 14
+			table.insert(getgenv().UIElements, checkbox)
 
 			local UICorner = Instance.new("UICorner")
 			UICorner.CornerRadius = UDim.new(0, 10)
-			UICorner.Parent = toggle
+			UICorner.Parent = checkbox
 
 			local Checkbox = Instance.new("Frame")
 			Checkbox.Name = "Checkbox"
-			Checkbox.Parent = toggle
+			Checkbox.Parent = checkbox
 			Checkbox.AnchorPoint = Vector2.new(1, 0.5)
 			Checkbox.Position = UDim2.new(1, -17, 0.5, 0)
 			Checkbox.Size = UDim2.new(0, 20, 0, 20)
-			Checkbox.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+			Checkbox.BackgroundColor3 = getgenv().checkboxturnoff or Color3.fromRGB(22, 23, 27)
 			Checkbox.BorderSizePixel = 0
+			table.insert(getgenv().UIElements, Checkbox)
 
 			local UICorner_2 = Instance.new("UICorner")
 			UICorner_2.CornerRadius = UDim.new(0, 4)
@@ -866,10 +1138,13 @@ end)
 			UICorner_3.Parent = Fill
 
 			local UIGradient = Instance.new("UIGradient")
-			UIGradient.Color = ColorSequence.new{
+			UIGradient.Name="checkboxturnon"
+			UIGradient.Color = getgenv().checkboxturnon or ColorSequence.new{
 				ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)),
 				ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 130, 0))
 			}
+			table.insert(getgenv().UIElements, UIGradient)
+
 			UIGradient.Rotation = 20
 			UIGradient.Parent = Fill
 
@@ -879,7 +1154,7 @@ end)
 			end
 
 			local TextLabel = Instance.new("TextLabel")
-			TextLabel.Parent = toggle
+			TextLabel.Parent = checkbox
 			TextLabel.AnchorPoint = Vector2.new(0, 0.5)
 			TextLabel.BackgroundTransparency = 1
 			TextLabel.Position = UDim2.new(0, 17, titleY, 0)
@@ -894,7 +1169,7 @@ end)
 
 			if self.description and self.description ~= "" then
 				local DescLabel = Instance.new("TextLabel")
-				DescLabel.Parent = toggle
+				DescLabel.Parent = checkbox
 				DescLabel.AnchorPoint = Vector2.new(0, 0.5)
 				DescLabel.BackgroundTransparency = 1
 				DescLabel.Position = UDim2.new(0, 17, 0.7, 0)
@@ -942,7 +1217,7 @@ end)
 			Library.Flags[self.flag] = ToggleObject
 			ToggleObject:UpdateToggle(ToggleObject.state, true)
 
-			toggle.MouseButton1Click:Connect(function()
+			checkbox.MouseButton1Click:Connect(function()
 				ToggleObject:UpdateToggle()
 			end)
 		end
@@ -954,12 +1229,13 @@ end)
 			local button = Instance.new("TextButton")
 			button.Name = "Button"
 			button.Parent = section
-			button.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+			button.BackgroundColor3 = getgenv().tabcolor or Color3.fromRGB(27, 28, 33)
 			button.BorderSizePixel = 0
 			button.Size = UDim2.new(0.96, 0, 0, 50)
 			button.Position = UDim2.new(0.02, 0, 0, 37)
 			button.AutoButtonColor = false
 			button.Text = ""
+			table.insert(getgenv().UIElements, button)
 
 			local UICorner = Instance.new("UICorner")
 			UICorner.CornerRadius = UDim.new(0, 10)
@@ -1004,17 +1280,25 @@ end)
 
 			local originalSize = UDim2.new(0.96, 0, 0, 50)
 			local pressedSize = UDim2.new(0.94, 0, 0, 48)
-			local originalColor = Color3.fromRGB(27, 28, 33)
-			local pressedColor = originalColor:lerp(Color3.fromRGB(200, 200, 200), 0.08)
 
 			local pressInfo = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 			local releaseInfo = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 			button.MouseButton1Click:Connect(function()
-				local pressTween = TweenService:Create(button, pressInfo, {Size = pressedSize, BackgroundColor3 = pressedColor})
+				local baseColor = getgenv().originalColor or Color3.fromRGB(27, 28, 33)
+				local pressedColor = baseColor:lerp(Color3.fromRGB(200, 200, 200), 0.08)
+
+				local pressTween = TweenService:Create(button, pressInfo, {
+					Size = pressedSize,
+					BackgroundColor3 = pressedColor
+				})
 				pressTween:Play()
+
 				pressTween.Completed:Connect(function()
-					local releaseTween = TweenService:Create(button, releaseInfo, {Size = originalSize, BackgroundColor3 = originalColor})
+					local releaseTween = TweenService:Create(button, releaseInfo, {
+						Size = originalSize,
+						BackgroundColor3 = baseColor
+					})
 					releaseTween:Play()
 				end)
 
@@ -1265,23 +1549,27 @@ end)
 			    local RIGHT_PADDING = 5  
 
 			    local slider = Instance.new("TextButton")
-			    slider.BackgroundColor3 = Color3.fromRGB(27,28,33)
+				slider.Name = "slider"
+			    slider.BackgroundColor3 = getgenv().slider or Color3.fromRGB(27,28,33)
 			    slider.Size = UDim2.new(0.96,0,0,50)
 			    slider.AutoButtonColor = false
 			    slider.Text = ""
 			    slider.Parent = section
-
+				table.insert(getgenv().UIElements, slider)
+				
 			    local sliderCorner = Instance.new("UICorner")
 			    sliderCorner.CornerRadius = UDim.new(0,10)
 			    sliderCorner.Parent = slider
 
 			    local track = Instance.new("Frame")
+				track.Name = "trackcolor"
 			    track.Parent = slider
 			    track.AnchorPoint = Vector2.new(0.5,0.5)
 			    track.Position = UDim2.new(0.5,0,0.75,0)
 			    track.Size = UDim2.new(1,-20,0,6)
-			    track.BackgroundColor3 = Color3.fromRGB(40,40,40)
+			    track.BackgroundColor3 = getgenv().trackcolor or Color3.fromRGB(40,40,40)
 			    track.BorderSizePixel = 0
+				table.insert(getgenv().UIElements, track)
 
 			    local trackCorner = Instance.new("UICorner")
 			    trackCorner.CornerRadius = UDim.new(1,0)
@@ -1289,11 +1577,13 @@ end)
 
 			    local fill = Instance.new("Frame")
 			    fill.Parent = track
+				fill.Name = "sliderfill"
 			    fill.AnchorPoint = Vector2.new(0,0.5)
 			    fill.Position = UDim2.new(0,0,0.5,0)
 			    fill.Size = UDim2.new(0,0,1,0)
-			    fill.BackgroundColor3 = Color3.fromRGB(90,90,90)
+			    fill.BackgroundColor3 = getgenv().sliderfill or Color3.fromRGB(90,90,90)
 			    fill.BorderSizePixel = 0
+				table.insert(getgenv().UIElements, fill)
 
 			    local fillCorner = Instance.new("UICorner")
 			    fillCorner.CornerRadius = UDim.new(1,0)
@@ -1301,11 +1591,13 @@ end)
 
 			    local knob = Instance.new("Frame")
 			    knob.Parent = track
+				knob.Name = "knob"
 			    knob.Size = UDim2.new(0,20,0,20)
 			    knob.AnchorPoint = Vector2.new(0.5,0.5)
 			    knob.Position = UDim2.new(0,LEFT_PADDING,0.5,0)
-			    knob.BackgroundColor3 = Color3.fromRGB(120,120,120)
+			    knob.BackgroundColor3 = getgenv().knob or Color3.fromRGB(120,120,120)
 			    knob.BorderSizePixel = 0
+				table.insert(getgenv().UIElements, knob)
 
 			    local knobCorner = Instance.new("UICorner")
 			    knobCorner.CornerRadius = UDim.new(1,0)
@@ -1477,12 +1769,13 @@ end)
 
 				local dropdown = Instance.new("TextButton")
 				dropdown.Parent = section
-				dropdown.Name = "Dropdown"
-				dropdown.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+				dropdown.Name = "SideDropdown"
+				dropdown.BackgroundColor3 = getgenv().sidedropdowncolor or Color3.fromRGB(27, 28, 33)
 				dropdown.BorderSizePixel = 0
 				dropdown.Size = UDim2.new(0.96, 0, 0, 50)
 				dropdown.AutoButtonColor = false
 				dropdown.Text = ""
+				table.insert(getgenv().UIElements, dropdown)
 
 				local UICorner = Instance.new("UICorner")
 				UICorner.CornerRadius = UDim.new(0, 10)
@@ -1507,29 +1800,31 @@ end)
 				Title.Text = self.name
 
 				local Box = Instance.new("Frame")
-				Box.Name = "Box"
+				Box.Name = "SideBox"
 				Box.Parent = dropdown
 				Box.AnchorPoint = Vector2.new(1, 0)
 				Box.Position = UDim2.new(1, -17, 0, 0)
-				Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+				Box.BackgroundColor3 = getgenv().sidedropdownboxcolor or Color3.fromRGB(22, 23, 27)
 				Box.BorderSizePixel = 0
 				Box.Size = UDim2.new(1, -250, 0, 38)
 				Box.ZIndex = 2
+				table.insert(getgenv().UIElements, Box)
 
 				local BoxCorner = Instance.new("UICorner")
 				BoxCorner.CornerRadius = UDim.new(0, 6)
 				BoxCorner.Parent = Box
 
 				local Options = Instance.new("Frame")
-				Options.Name = "Options"
+				Options.Name = "SideOptions"
 				Options.Parent = Box
 				Options.AnchorPoint = Vector2.new(0, 0)
-				Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+				Options.BackgroundColor3 = getgenv().sidedropdownoptionscolor or Color3.fromRGB(22, 23, 27)
 				Options.BorderSizePixel = 0
 				Options.ClipsDescendants = true
 				Options.Position = UDim2.new(0, 0, 0.76, 0)
 				Options.Size = UDim2.new(1, 0, 0, 0)
 				Options.ZIndex = 2
+				table.insert(getgenv().UIElements, Options)
 
 				local OptionsCorner = Instance.new("UICorner")
 				OptionsCorner.CornerRadius = UDim.new(0, 6)
@@ -1581,11 +1876,11 @@ end)
 					open = true
 					local targetHeight = 10 + list_size
 
-					TweenService:Create(Options, TweenInfo.new(0.25), {
+					TweenService:Create(Options, TweenInfo.new(0.5), {
 						Size = UDim2.new(1, 0, 0, targetHeight)
 					}):Play()
 
-					TweenService:Create(Arrow, TweenInfo.new(0.25), {
+					TweenService:Create(Arrow, TweenInfo.new(0.5), {
 						Rotation = 180
 					}):Play()
 				end
@@ -1593,11 +1888,11 @@ end)
 				function Dropdown:close()
 					open = false
 
-					TweenService:Create(Options, TweenInfo.new(0.25), {
+					TweenService:Create(Options, TweenInfo.new(0.5), {
 						Size = UDim2.new(1, 0, 0, 0)
 					}):Play()
 
-					TweenService:Create(Arrow, TweenInfo.new(0.25), {
+					TweenService:Create(Arrow, TweenInfo.new(0.5), {
 						Rotation = 0
 					}):Play()
 				end
@@ -1710,12 +2005,13 @@ end)
 
 				local dropdown = Instance.new("TextButton")
 				dropdown.Parent = section
-				dropdown.Name = "Dropdown"
-				dropdown.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+				dropdown.Name = "multisidedropdown"
+				dropdown.BackgroundColor3 = getgenv().multisidedropdown or Color3.fromRGB(27, 28, 33)
 				dropdown.BorderSizePixel = 0
 				dropdown.Size = UDim2.new(0.96, 0, 0, 50)
 				dropdown.AutoButtonColor = false
 				dropdown.Text = ""
+				table.insert(getgenv().UIElements, dropdown)
 
 				local UICorner = Instance.new("UICorner")
 				UICorner.CornerRadius = UDim.new(0, 10)
@@ -1740,29 +2036,31 @@ end)
 				Title.Text = self.name
 
 				local Box = Instance.new("Frame")
-				Box.Name = "Box"
+				Box.Name = "multisidedropdownBox"
 				Box.Parent = dropdown
 				Box.AnchorPoint = Vector2.new(1, 0)
 				Box.Position = UDim2.new(1, -17, 0, 0)
-				Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+				Box.BackgroundColor3 = getgenv().multisidedropdownBox or Color3.fromRGB(22, 23, 27)
 				Box.BorderSizePixel = 0
 				Box.Size = UDim2.new(1, -250, 0, 38)
 				Box.ZIndex = 2
+				table.insert(getgenv().UIElements, Box)
 
 				local BoxCorner = Instance.new("UICorner")
 				BoxCorner.CornerRadius = UDim.new(0, 6)
 				BoxCorner.Parent = Box
 
 				local Options = Instance.new("Frame")
-				Options.Name = "Options"
+				Options.Name = "multisidedropdownOptions"
 				Options.Parent = Box
 				Options.AnchorPoint = Vector2.new(0, 0)
-				Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+				Options.BackgroundColor3 = getgenv().multisidedropdownOptions or Color3.fromRGB(22, 23, 27)
 				Options.BorderSizePixel = 0
 				Options.ClipsDescendants = true
 				Options.Position = UDim2.new(0, 0, 0.76, 0)
 				Options.Size = UDim2.new(1, 0, 0, 0)
 				Options.ZIndex = 2
+				table.insert(getgenv().UIElements, Options)
 
 				local OptionsCorner = Instance.new("UICorner")
 				OptionsCorner.CornerRadius = UDim.new(0, 6)
@@ -1814,15 +2112,15 @@ end)
 
 				function Dropdown:open()
 					open = true
-					local targetHeight = #self.options * OPTION_HEIGHT
-					TweenService:Create(Options, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
-					TweenService:Create(Arrow, TweenInfo.new(0.25), {Rotation = 180}):Play()
+					local targetHeight = #self.options * OPTION_HEIGHT+10
+					TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+					TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 180}):Play()
 				end
 
 				function Dropdown:close()
 					open = false
-					TweenService:Create(Options, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-					TweenService:Create(Arrow, TweenInfo.new(0.25), {Rotation = 0}):Play()
+					TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+					TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 0}):Play()
 				end
 
 				function Dropdown:clear()
@@ -1927,7 +2225,7 @@ end)
                     local dropdown = Instance.new("TextButton")
                     dropdown.Parent = section
                     dropdown.Name = "Dropdown"
-                    dropdown.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+                    dropdown.BackgroundColor3 = getgenv().dropdowncolor or Color3.fromRGB(27, 28, 33)
                     dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
                     dropdown.BorderSizePixel = 0
                     dropdown.Size = UDim2.new(0.96, 0, 0, 50)
@@ -1936,6 +2234,7 @@ end)
                     dropdown.Text = ""
                     dropdown.TextColor3 = Color3.fromRGB(0, 0, 0)
                     dropdown.TextSize = 14
+					table.insert(getgenv().UIElements, dropdown)
 
                     local UICorner = Instance.new("UICorner")
                     UICorner.CornerRadius = UDim.new(0, 10)
@@ -1954,12 +2253,13 @@ end)
                     Box.Name = "Box"
                     Box.Parent = dropdown
                     Box.AnchorPoint = Vector2.new(0.5, 0)
-                    Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+                    Box.BackgroundColor3 = getgenv().dropdownboxscolor or Color3.fromRGB(22, 23, 27)
                     Box.BorderColor3 = Color3.fromRGB(0, 0, 0)
                     Box.BorderSizePixel = 0
                     Box.Position = UDim2.new(0.5, 0, 0.15, 0)
                     Box.Size = UDim2.new(1, -12, 0, 38)
                     Box.ZIndex = 2
+					table.insert(getgenv().UIElements, Box)
 
                     local UICorner_2 = Instance.new("UICorner")
                     UICorner_2.CornerRadius = UDim.new(0, 6)
@@ -1969,12 +2269,13 @@ end)
                     Options.Name = "Options"
                     Options.Parent = Box
                     Options.AnchorPoint = Vector2.new(0, 0)
-                    Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+                    Options.BackgroundColor3 = getgenv().dropdownoptionscolor or Color3.fromRGB(22, 23, 27)
                     Options.BorderColor3 = Color3.fromRGB(0, 0, 0)
                     Options.BorderSizePixel = 0
                     Options.ClipsDescendants = true
                     Options.Position = UDim2.new(0, 0, 0.76, 0)
                     Options.Size = UDim2.new(1, 0, 0, 0)
+					table.insert(getgenv().UIElements, Options)
 
                     local UICorner_3 = Instance.new("UICorner")
                     UICorner_3.CornerRadius = UDim.new(0, 6)
@@ -2032,16 +2333,16 @@ end)
 
                     function Dropdown:open()
                         open = true
-                        TweenService:Create(Options, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, list_size + 10)}):Play()
-                        TweenService:Create(dropdown, TweenInfo.new(0.25), {Size = UDim2.new(BASE_WIDTH, 0, 0, 40 + list_size + 10)}):Play()
-                        TweenService:Create(Arrow, TweenInfo.new(0.25), {Rotation = 180}):Play()
+                        TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1, 0, 0, list_size + 10)}):Play()
+                        TweenService:Create(dropdown, TweenInfo.new(0.5), {Size = UDim2.new(BASE_WIDTH, 0, 0, 40 + list_size + 10)}):Play()
+                        TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 180}):Play()
                     end
 
                     function Dropdown:close()
                         open = false
-                        TweenService:Create(Options, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-                        TweenService:Create(dropdown, TweenInfo.new(0.25), {Size = UDim2.new(BASE_WIDTH, 0, 0, CLOSED_HEIGHT)}):Play()
-                        TweenService:Create(Arrow, TweenInfo.new(0.25), {Rotation = 0}):Play()
+                        TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+                        TweenService:Create(dropdown, TweenInfo.new(0.5), {Size = UDim2.new(BASE_WIDTH, 0, 0, CLOSED_HEIGHT)}):Play()
+                        TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 0}):Play()
                     end
 
                     function Dropdown:clear()
@@ -2140,32 +2441,36 @@ end)
                     optionTemplate.TextXAlignment = Enum.TextXAlignment.Left
                     optionTemplate.TextWrapped = true
 
-                    local dropdown = Instance.new("TextButton")
-                    dropdown.Parent = section
-                    dropdown.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-                    dropdown.BorderSizePixel = 0
-                    dropdown.Size = UDim2.new(BASE_WIDTH, 0, 0, CLOSED_HEIGHT)
-                    dropdown.AutoButtonColor = false
-                    dropdown.Text = ""
+                    local dropdown1 = Instance.new("TextButton")
+                    dropdown1.Parent = section
+					dropdown1.Name = "dropdown1"
+                    dropdown1.BackgroundColor3 = getgenv().multidropdowncolor or Color3.fromRGB(27, 28, 33)
+                    dropdown1.BorderSizePixel = 0
+                    dropdown1.Size = UDim2.new(BASE_WIDTH, 0, 0, CLOSED_HEIGHT)
+                    dropdown1.AutoButtonColor = false
+                    dropdown1.Text = ""
+					table.insert(getgenv().UIElements, dropdown1)
 
                     local UICorner = Instance.new("UICorner")
                     UICorner.CornerRadius = UDim.new(0, 10)
-                    UICorner.Parent = dropdown
+                    UICorner.Parent = dropdown1
 
-                    local Box = Instance.new("Frame")
-                    Box.Parent = dropdown
-                    Box.AnchorPoint = Vector2.new(0.5, 0)
-                    Box.Position = UDim2.new(0.5, 0, 0, 6)
-                    Box.Size = UDim2.new(1, -12, 0, 38)
-                    Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-                    Box.BorderSizePixel = 0
+                    local Box1 = Instance.new("Frame")
+					Box1.Name = "Box1"
+                    Box1.Parent = dropdown1
+                    Box1.AnchorPoint = Vector2.new(0.5, 0)
+                    Box1.Position = UDim2.new(0.5, 0, 0, 6)
+                    Box1.Size = UDim2.new(1, -12, 0, 38)
+                    Box1.BackgroundColor3 = getgenv().multidropdownboxcolor or Color3.fromRGB(22, 23, 27)
+                    Box1.BorderSizePixel = 0
+					table.insert(getgenv().UIElements, Box1)
 
                     local BoxCorner = Instance.new("UICorner")
                     BoxCorner.CornerRadius = UDim.new(0, 6)
-                    BoxCorner.Parent = Box
+                    BoxCorner.Parent = Box1
 
                     local TextLabel = Instance.new("TextLabel")
-                    TextLabel.Parent = Box
+                    TextLabel.Parent = Box1
                     TextLabel.AnchorPoint = Vector2.new(0, 0.5)
                     TextLabel.Position = UDim2.new(0.03, 0, 0.5, 0)
                     TextLabel.Size = UDim2.new(1, -30, 1, 0)
@@ -2177,7 +2482,7 @@ end)
                     TextLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
                     local Arrow = Instance.new("ImageLabel")
-                    Arrow.Parent = Box
+                    Arrow.Parent = Box1
                     Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
                     Arrow.Position = UDim2.new(0.96, 0, 0.5, 0)
                     Arrow.Size = UDim2.new(0, 12, 0, 12)
@@ -2185,12 +2490,14 @@ end)
                     Arrow.Image = "rbxassetid://17400678941"
 
                     local Options = Instance.new("Frame")
-                    Options.Parent = Box
+                    Options.Parent = Box1
+					Options.Name = "Options1"
                     Options.AnchorPoint = Vector2.new(0, 0)
                     Options.Position = UDim2.new(0, 0, 0.76, 0)
                     Options.Size = UDim2.new(1, 0, 0, 0)
-                    Options.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+                    Options.BackgroundColor3 = getgenv().multidropdownoptioncolor or Color3.fromRGB(22, 23, 27)
                     Options.ClipsDescendants = true
+					table.insert(getgenv().UIElements, Options)
 
                     local OptionsCorner = Instance.new("UICorner")
                     OptionsCorner.CornerRadius = UDim.new(0, 6)
@@ -2268,15 +2575,15 @@ end)
 
                     function Dropdown:open()
                         open = true
-                        TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1,0,0, list_size + 20)}):Play()
-                        TweenService:Create(dropdown, TweenInfo.new(0.5), {Size = UDim2.new(BASE_WIDTH,0,0, CLOSED_HEIGHT + list_size + 10)}):Play()
+                        TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1,0,0, list_size + 10)}):Play()
+                        TweenService:Create(dropdown1, TweenInfo.new(0.5), {Size = UDim2.new(BASE_WIDTH,0,0, CLOSED_HEIGHT + list_size + 0)}):Play()
                         TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 180}):Play()
                     end
 
                     function Dropdown:close()
                         open = false
                         TweenService:Create(Options, TweenInfo.new(0.5), {Size = UDim2.new(1,0,0,0)}):Play()
-                        TweenService:Create(dropdown, TweenInfo.new(0.5), {Size = UDim2.new(BASE_WIDTH,0,0,CLOSED_HEIGHT)}):Play()
+                        TweenService:Create(dropdown1, TweenInfo.new(0.5), {Size = UDim2.new(BASE_WIDTH,0,0,CLOSED_HEIGHT)}):Play()
                         TweenService:Create(Arrow, TweenInfo.new(0.5), {Rotation = 0}):Play()
                     end
 
@@ -2287,7 +2594,7 @@ end)
                         self:refreshOptions()
                     end
 
-                    Box.InputBegan:Connect(function(input)
+                    Box1.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                             open = not open
                             if open then Dropdown:open() else Dropdown:close() end
@@ -2397,13 +2704,15 @@ end)
 
         local inputButton = Instance.new("TextButton")
         inputButton.Name = "Input"
-        inputButton.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+        inputButton.BackgroundColor3 = getgenv().inputButton or Color3.fromRGB(27, 28, 33)
         inputButton.BorderSizePixel = 0
         inputButton.Position = UDim2.new(0.02, 0, 0, 37)
         inputButton.Size = UDim2.new(0.96, 0, 0, 50)
         inputButton.AutoButtonColor = false
         inputButton.Text = ""
         inputButton.Parent = sectionFrame
+		
+		table.insert(getgenv().UIElements, inputButton)
 
         local UICorner = Instance.new("UICorner")
         UICorner.CornerRadius = UDim.new(0, 10)
@@ -2426,7 +2735,7 @@ end)
         TextBox.Name = "InputBox"
         TextBox.Parent = inputButton
         TextBox.AnchorPoint = Vector2.new(1, 0.5)
-        TextBox.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+        TextBox.BackgroundColor3 = getgenv().InputBox or Color3.fromRGB(22, 23, 27)
         TextBox.BorderSizePixel = 0
         TextBox.Position = UDim2.new(0.95, 0, 0.5, 0)
         TextBox.Size = UDim2.new(0, 120, 0, 27)
@@ -2439,6 +2748,7 @@ end)
         TextBox.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
         TextBox.TextXAlignment = Enum.TextXAlignment.Center
         TextBox.ClipsDescendants = true
+		table.insert(getgenv().UIElements, TextBox)
 
         local UICorner_2 = Instance.new("UICorner")
         UICorner_2.CornerRadius = UDim.new(0, 4)
@@ -2483,13 +2793,14 @@ end)
 
 			local keybind = Instance.new("TextButton")
 			keybind.Name = "Keybind"
-			keybind.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+			keybind.BackgroundColor3 = getgenv().Keybind or Color3.fromRGB(27, 28, 33)
 			keybind.BorderSizePixel = 0
 			keybind.Position = UDim2.new(0.02, 0, 0, 37)
 			keybind.Size = UDim2.new(0.96, 0, 0, 50)
 			keybind.AutoButtonColor = false
 			keybind.Text = ""
 			keybind.Parent = section
+			table.insert(getgenv().UIElements, keybind)
 
 			local UICorner = Instance.new("UICorner")
 			UICorner.CornerRadius = UDim.new(0, 10)
@@ -2509,11 +2820,13 @@ end)
 
 			local Box = Instance.new("Frame")
 			Box.Parent = keybind
+			Box.Name = "KeybindBox"
 			Box.AnchorPoint = Vector2.new(1, 0.5)
 			Box.Position = UDim2.new(1, -17, 0.5, 0)
 			Box.Size = UDim2.new(0, 60, 0, 27)
-			Box.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
+			Box.BackgroundColor3 = getgenv().KeybindBox or Color3.fromRGB(22, 23, 27)
 			Box.BorderSizePixel = 0
+			table.insert(getgenv().UIElements, Box)
 
 			local UICorner2 = Instance.new("UICorner")
 			UICorner2.CornerRadius = UDim.new(0, 4)
