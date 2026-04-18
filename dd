@@ -1,0 +1,1245 @@
+
+
+task.spawn(function()
+    local plr = game:GetService("Players").LocalPlayer
+    local rs = game:GetService("ReplicatedStorage")
+
+    while task.wait(1) do
+        local gui = plr.PlayerGui:FindFirstChild("EndScreen")
+        if gui and gui.Enabled then
+            rs.Remotes.ReturnToLooby:FireServer()
+        end
+    end
+end)
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
+local playerGui = player:WaitForChild("PlayerGui")
+local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local t = tick()
+while gui:FindFirstChild("DetailTextLabel", true) and tick() - t < 30 do task.wait() end
+
+
+local function createCustomGui(message1, showMessage3, ...)
+    local Lighting = game:GetService("Lighting")
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+
+    local existingBlur = Lighting:FindFirstChild("ScreenBlur")
+    if existingBlur then existingBlur:Destroy() end
+    local existingGui = playerGui:FindFirstChild("ScreenDarken")
+    if existingGui then existingGui:Destroy() end
+
+    local blur = Instance.new("BlurEffect")
+    blur.Name = "ScreenBlur"
+    blur.Size = 24
+    blur.Parent = Lighting
+
+    local darkenGui = Instance.new("ScreenGui")
+    darkenGui.Name = "ScreenDarken"
+    darkenGui.IgnoreGuiInset = true
+    darkenGui.ResetOnSpawn = false
+    darkenGui.Parent = playerGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.Position = UDim2.new(0, 0, 0, 0)
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BackgroundTransparency = 0.5
+    frame.Parent = darkenGui
+
+    if getgenv().auto_win == true or getgenv().auto_bond == true then
+        local image = Instance.new("ImageLabel")
+        image.Name = "CenterImage"
+        image.Size = UDim2.new(1, 0, 1, 0)
+        image.Position = UDim2.new(0, 0, 0, 0)
+        image.BackgroundTransparency = 1
+        image.Image = "rbxassetid://88747718358978"
+        image.ImageTransparency = 0.3
+        image.ZIndex = 2
+        image.Parent = frame
+
+        local copyButton = Instance.new("TextButton")
+        copyButton.Size = UDim2.new(0, 190, 0, 40)
+        copyButton.Position = UDim2.new(0.5, -95, 0.545, 0)
+        copyButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+        copyButton.TextColor3 = Color3.new(1, 1, 1)
+        copyButton.Text = "Copy Discord"
+        copyButton.TextSize = 3
+        copyButton.Font = Enum.Font.GothamBold
+        copyButton.TextScaled = true
+        copyButton.AutoButtonColor = true
+        copyButton.ZIndex = 2
+        copyButton.Parent = frame
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = copyButton
+
+        local constraint = Instance.new("UITextSizeConstraint")
+        constraint.MaxTextSize = 28
+        constraint.MinTextSize = 10
+        constraint.Parent = copyButton
+
+        copyButton.MouseButton1Click:Connect(function()
+            setclipboard("https://discord.gg/moondiety")
+            copyButton.Text = "Copied!"
+            task.delay(2, function()
+                copyButton.Text = "Copy Discord"
+            end)
+        end)
+    end
+
+    local function applyStaticGradient(label)
+        local gradient = Instance.new("UIGradient")
+        gradient.Rotation = 6
+        if getgenv().auto_win == true or getgenv().auto_bond == true then
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.00, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 120, 120)),
+                ColorSequenceKeypoint.new(0.50, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(255, 120, 120)),
+                ColorSequenceKeypoint.new(1.00, Color3.new(1, 1, 1)),
+            })
+        elseif getgenv().autowin == true or getgenv().autobond == true then
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0.00, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.25, Color3.fromRGB(90, 225, 180)),
+                ColorSequenceKeypoint.new(0.50, Color3.fromRGB(7, 175, 118)),
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(90, 225, 180)),
+                ColorSequenceKeypoint.new(1.00, Color3.new(1, 1, 1)),
+            })
+        end
+        gradient.Parent = label
+    end
+
+    local function createText(yScale, heightScale)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, heightScale, 0)
+        label.Position = UDim2.new(0, 0, yScale, 0)
+        label.BackgroundTransparency = 1
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.ZIndex = 2
+        label.Parent = frame
+
+        local constraint = Instance.new("UITextSizeConstraint")
+        constraint.MaxTextSize = 40
+        constraint.MinTextSize = 10
+        constraint.Parent = label
+
+        return label
+    end
+
+    local line1 = createText(0.43, 0.035)
+    line1.RichText = true
+    line1.Text = message1
+
+    local animatedText = createText(0.495, 0.028)
+    animatedText.Text = ""
+    animatedText.RichText = true
+    applyStaticGradient(animatedText)
+
+    local timeText = createText(0.465, 0.028)
+    applyStaticGradient(timeText)
+
+    local totalSeconds = 14 * 60
+    task.spawn(function()
+        while totalSeconds >= 0 do
+            local minutes = math.floor(totalSeconds / 60)
+            local seconds = totalSeconds % 60
+            timeText.Text = string.format("Time Remain: %02d:%02d", minutes, seconds)
+            task.wait(1)
+            totalSeconds -= 1
+        end
+        timeText.Text = "Time Remain: 00:00"
+    end)
+
+    local messages = {...}
+    if #messages == 0 then
+        messages = {"Default message"}
+    end
+
+    task.spawn(function()
+        local i = 1
+        while true do
+            local fullText = tostring(messages[i] or "")
+            animatedText.Text = ""
+            task.wait()
+            for j = 1, #fullText do
+                animatedText.Text = fullText:sub(1, j)
+                task.wait(0.05)
+            end
+            task.wait(2)
+            i = (i % #messages) + 1
+        end
+    end)
+
+    if not showMessage3 then
+        timeText.Visible = false
+        animatedText.Position = UDim2.new(0, 0, 0.465, 0)
+    end
+
+    return line1, animatedText, timeText
+end
+
+local line1, animatedText, timeText
+local function PartyTeleport()
+    local TweenService = game:GetService("TweenService")
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local RunService = game:GetService("RunService")
+    local TeleportService = game:GetService("TeleportService")
+    local HttpService = game:GetService("HttpService")
+    local player = Players.LocalPlayer
+    local connection
+
+    local function getCharacter()
+        return player.Character or player.CharacterAdded:Wait()
+    end
+
+    local function getHumanoidRootPart()
+        return getCharacter():WaitForChild("HumanoidRootPart")
+    end
+
+    local function getHumanoid()
+        return getCharacter():WaitForChild("Humanoid")
+    end
+
+    local function getStatusLabel(zone)
+        return zone:FindFirstChild("BillboardGui") and zone.BillboardGui:FindFirstChild("StatusLabel")
+    end
+
+    local function findAvailableTeleportZone()
+        local zones = workspace:WaitForChild("PartyZones")
+        for i = 0, 3 do
+            local zoneName = i == 0 and "PartyZone" or "PartyZone"..i
+            local zone = zones:FindFirstChild(zoneName)
+            if zone then
+                local label = getStatusLabel(zone)
+                if label and label.Text == "Waiting for players..." and zone.PrimaryPart then
+                    return zone
+                end
+            end
+        end
+        return nil
+    end
+
+    local function teleportToTop(destination)
+        local root = getHumanoidRootPart()
+        if root and destination then
+            if root.Anchored then root.Anchored = false end
+            local topPosition = destination.Position + Vector3.new(0, destination.Size.Y/2 + 3, 0)
+            root.CFrame = CFrame.new(topPosition)
+        end
+    end
+
+    local function createParty()
+
+        local args = {
+            {
+                isPrivate = getgenv().isPrivate == true,
+                maxMembers = getgenv().party_members or 1,
+                trainId = "default",
+                gameMode = getgenv().party_mode or "Normal"
+            }
+        }
+        ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
+    end
+
+    local function walkAroundPosition(centerCFrame, radius, duration, angularSpeed)
+        local character = getCharacter()
+        local root = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+        local startTime = tick()
+        local angle = 0
+
+        task.spawn(function()
+            while tick() - startTime < duration do
+                local targetX = centerCFrame.Position.X + math.cos(angle) * radius
+                local targetZ = centerCFrame.Position.Z + math.sin(angle) * radius
+                local targetPos = Vector3.new(targetX, root.Position.Y, targetZ)
+                humanoid:MoveTo(targetPos)
+                humanoid.MoveToFinished:Wait(0.03)
+                angle = angle + angularSpeed
+                task.wait(0.02)
+            end
+        end)
+    end
+
+    local lastCheck = 0
+    local currentZone = nil
+    local zoneLocked = false
+    local partyRequestTime = nil
+
+    connection = RunService.Heartbeat:Connect(function()
+        local now = tick()
+        if now - lastCheck >= 1 then
+            lastCheck = now
+
+          
+            if partyRequestTime and now - partyRequestTime >= 15 then
+              
+                local placeId = game.PlaceId
+                local success, servers = pcall(function()
+                    return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"))
+                end)
+                if success and servers.data then
+                    for _, s in ipairs(servers.data) do
+                        if s.playing < s.maxPlayers then
+                            TeleportService:TeleportToPlaceInstance(placeId, s.id, player)
+                            return
+                        end
+                    end
+                end
+            end
+
+            if not zoneLocked then
+                local zone = findAvailableTeleportZone()
+                if zone then
+                    teleportToTop(zone.PrimaryPart)
+                    partyRequestTime = tick()
+                    task.spawn(function()
+                        task.wait(0.5)
+                        createParty()
+                        task.wait(0.5)
+                        walkAroundPosition(zone.PrimaryPart.CFrame, 3, 10, 0.015)
+                    end)
+                    currentZone = zone
+                    zoneLocked = true
+                end
+            elseif currentZone then
+                local label = getStatusLabel(currentZone)
+                if label and label.Text == "Waiting for players..." then
+                    zoneLocked = false
+                    currentZone = nil
+                    partyRequestTime = nil
+                end
+            end
+        end
+    end)
+
+    return function()
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+    end
+end
+
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+local root = char:WaitForChild("HumanoidRootPart")
+
+local FLYING = false
+local CONTROL = {Q = 0, E = 0}
+local bg, bv
+local renderConn
+
+local function startFly()
+    if FLYING then return end
+    bg = Instance.new("BodyGyro", root)
+    bv = Instance.new("BodyVelocity", root)
+    bg.P = 9e4
+    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame = root.CFrame
+    bv.velocity = Vector3.new()
+    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+    FLYING = true
+
+    UserInputService.InputBegan:Connect(function(i, g)
+        if g then return end
+        local k = i.KeyCode.Name:lower()
+    end)
+    UserInputService.InputEnded:Connect(function(i, g)
+        if g then return end
+        local k = i.KeyCode.Name:lower()
+    end)
+
+    renderConn = RunService.RenderStepped:Connect(function()
+        if FLYING then
+            local speed = getgenv().vflyspeed or 10
+            local camCF = workspace.CurrentCamera.CFrame
+            local moveDir = humanoid and humanoid.MoveDirection or Vector3.new()
+            local vertical = CONTROL.E + CONTROL.Q
+            local camLook = camCF.LookVector
+            local camRight = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
+            if camRight.Magnitude > 0 then camRight = camRight.Unit end
+            local f = moveDir:Dot(camLook.Unit)
+            local r = moveDir:Dot(camRight)
+            local dir = (camLook.Unit * f) + (camRight * r)
+            if vertical ~= 0 then dir = dir + Vector3.new(0, vertical, 0) end
+            if dir.Magnitude > 0 then dir = dir.Unit end
+            bv.Velocity = dir * speed
+            bg.CFrame = camCF
+        end
+    end)
+end
+
+local function stopFly()
+    FLYING = false
+    if bg then bg:Destroy() bg = nil end
+    if bv then bv:Destroy() bv = nil end
+    if renderConn then renderConn:Disconnect() renderConn = nil end
+end
+local player = game.Players.LocalPlayer
+local FLYING = false
+local flyActive = false
+
+local state = {
+    crateOpened = false,
+    horseMounted = false
+}
+
+local lastCrateId = nil
+local horse = nil
+local draggedSaddleId = nil
+
+
+local remoteStore = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+    :WaitForChild("Universe"):WaitForChild("Network")
+    :WaitForChild("RemoteEvent"):WaitForChild("Store")
+
+local startDragRemote = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+    :WaitForChild("Universe"):WaitForChild("Network")
+    :WaitForChild("RemoteEvent"):WaitForChild("StartDrag")
+
+local stopDragRemote = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+    :WaitForChild("Universe"):WaitForChild("Network")
+    :WaitForChild("RemoteEvent"):WaitForChild("StopDrag")
+
+
+
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if humanoid.SeatPart == nil then
+                local t = tick()
+                while tick() - t < 0.5 do
+                    task.wait()
+                    if humanoid.SeatPart ~= nil then
+                        break
+                    end
+                end
+                if humanoid.SeatPart == nil then
+                    if FLYING then
+                        stopFly()
+                    end
+                end
+            end
+        end
+    end
+end)
+local flyActive = false
+local flyTask = nil
+local horse = nil
+local draggedSaddleId = nil
+local lastCrateId = nil
+local FLYING = false
+
+local function pullHorseForward(horse, rootPart)
+    if not horse or not rootPart then
+        return
+    end
+    local look = rootPart.CFrame.LookVector
+    local targetPos = rootPart.Position + (look * 9)
+    horse:PivotTo(CFrame.new(targetPos))
+end
+
+local function findHorse(rootPart)
+    if not rootPart then
+        return nil, nil
+    end
+
+    local closestHorse = nil
+    local minDist = math.huge
+    local closestSaddle = nil
+
+    local function searchHorseInContainer(container)
+        if container then
+            local horse = container:FindFirstChild("Model_Horse")
+            if horse then
+                local seat = horse:FindFirstChild("VehicleSeat")
+                if seat and not seat.Disabled then
+                    local dist = (seat.Position - rootPart.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closestHorse = horse
+                    end
+                end
+            end
+        end
+    end
+
+        searchHorseInContainer(workspace)
+        local runtimeEntities = workspace:FindFirstChild("RuntimeEntities")
+        if runtimeEntities then
+            searchHorseInContainer(runtimeEntities)
+        end
+
+        if not closestHorse then
+    local RS = game:GetService("ReplicatedStorage")
+    local target = Vector3.new(136.646164, 4.78174829, 29815.7168)
+
+    local function distXZ(a, b)
+        return ((a.X-b.X)^2 + (a.Z-b.Z)^2)^0.5
+    end
+
+    local function check(obj)
+        if not obj or obj.Name ~= "saddle" then return end
+
+        local p = obj:FindFirstChild("MeshPart")
+        if not p then return end
+
+        if distXZ(p.Position, target) < 25 then
+            obj.Parent = RS
+            return nil
+        end
+
+        return obj
+    end
+
+    local saddle = check(workspace.ObjectModels:FindFirstChild("saddle"))
+
+    if saddle then
+        for _, v in ipairs(RS:GetChildren()) do
+            if v.Name == "saddle" then
+                v.Parent = workspace.ObjectModels
+            end
+        end
+        print("FOUND:", saddle)
+
+            local saddlePos = saddle:GetPivot().Position
+
+            local function searchHorseAndSaddle(container)
+                if container then
+                    local horse = container:FindFirstChild("Model_Horse")
+                    if horse then
+                        local seat = horse:FindFirstChild("VehicleSeat")
+                        if seat and seat.Disabled then
+                            local dist = (seat.Position - saddlePos).Magnitude
+                            if dist < minDist then
+                                minDist = dist
+                                closestHorse = horse
+                                closestSaddle = saddle
+                            end
+                        end
+                    end
+                end
+            end
+
+            searchHorseAndSaddle(workspace)
+            if runtimeEntities then
+                searchHorseAndSaddle(runtimeEntities)
+            end
+        end
+    end
+
+    return closestHorse, closestSaddle
+end
+
+local function openFly()
+    if flyActive then
+        return
+    end
+    flyActive = true
+    state.crateOpened = false
+    state.horseMounted = false
+    horse = nil
+    lastCrateId = nil
+    draggedSaddleId = nil
+
+    flyTask = task.spawn(function()
+        while flyActive do
+            local character = player.Character
+            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            local objectModels = workspace:FindFirstChild("ObjectModels")
+            if not rootPart or not humanoid then
+                task.wait(0.3)
+                continue
+            end
+
+            local closestHorse, closestSaddle = findHorse(rootPart)
+            local closestCrate, minDist = nil, math.huge
+            if objectModels then
+                for _, obj in ipairs(objectModels:GetChildren()) do
+                    if obj.Name == "crate" then
+                        local dist = (obj:GetPivot().Position - rootPart.Position).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            closestCrate = obj
+                        end
+                    end
+                end
+            end
+            if closestCrate and not state.crateOpened then
+                local id = closestCrate:GetAttribute("serverEntity")
+                if id and id ~= lastCrateId then
+                    lastCrateId = id
+                    local remote = game:GetService("ReplicatedStorage")
+                        :WaitForChild("Shared"):WaitForChild("Universe")
+                        :WaitForChild("Network"):WaitForChild("RemoteEvent")
+                        :WaitForChild("Actionable")
+                    remote:FireServer(id)
+                    task.wait(0.1)
+                    remote:FireServer(id)
+                    state.crateOpened = true
+                    task.wait(0.5)
+                    closestHorse, closestSaddle = findHorse(rootPart)
+                    draggedSaddleId = nil
+                end
+            end
+
+            if closestHorse and closestHorse.Parent then
+                local seat = closestHorse:FindFirstChild("VehicleSeat")
+                if seat and seat.Disabled == false then
+                    task.wait(0.1)
+                    if not state.horseMounted then
+                        rootPart.CFrame = seat.CFrame + Vector3.new(0, 2, 0)
+                        state.horseMounted = true
+
+                        if not FLYING then
+                            FLYING = true
+                        end
+                        local horseID = closestHorse:GetAttribute("serverEntity")
+                        if horseID then
+                            remoteStore:FireServer(horseID)
+                            startFly()
+                        end
+                    end
+                elseif closestSaddle then
+                    pullHorseForward(closestHorse, rootPart)
+                    local saddleID = closestSaddle:GetAttribute("serverEntity")
+                    if saddleID and saddleID ~= draggedSaddleId then
+                        draggedSaddleId = saddleID
+                        startDragRemote:FireServer(saddleID)
+                        local startTime = tick()
+                        local maxWait = 5
+                        while flyActive do
+                            task.wait(0.1)
+                            local stillExists = false
+                            for _, obj in ipairs(objectModels:GetChildren()) do
+                                if obj.Name == "saddle" and obj:GetAttribute("serverEntity") == saddleID then
+                                    stillExists = true
+                                    break
+                                end
+                            end
+                            if not stillExists then break end
+                            if closestHorse and closestHorse.Parent then
+                                pullHorseForward(closestHorse, rootPart)
+                            end
+                            if tick() - startTime > maxWait then break end
+                        end
+                        stopDragRemote:FireServer(saddleID)
+                    end
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end
+
+local function closeFly()
+    if not flyActive then return end
+    flyActive = false
+    stopFly()
+    if flyTask then
+        task.wait(0.1)
+        flyTask = nil
+    end
+    for i = 1, 10 do
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Shared"):WaitForChild("Universe")
+            :WaitForChild("Network"):WaitForChild("RemoteEvent")
+            :WaitForChild("Store"):FireServer()
+        task.wait(0.05)
+    end
+end
+
+local function autoBonds()
+    local p = game.Players.LocalPlayer
+
+task.spawn(function()
+    while true do
+        local c = p.Character or p.CharacterAdded:Wait()
+        local hrp = c:WaitForChild("HumanoidRootPart")
+
+        local last = hrp.Position
+        local t = 0
+
+        while c.Parent do
+            task.wait(1)
+            if (hrp.Position - last).Magnitude < 0.5 then
+                t += 1
+            else
+                t = 0
+                last = hrp.Position
+            end
+
+            if t >= 15 then
+                game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+                break
+            end
+        end
+    end
+end)
+    local startTime = tick()
+    local remoteRoot = game:GetService("ReplicatedStorage").Shared.Universe.Network.RemoteEvent
+    local processed = {}
+    local checkedBanks = {}
+
+    task.spawn(function()
+        while true do
+            local objectModels = workspace:WaitForChild("ObjectModels")
+            for _, obj in ipairs(objectModels:GetChildren()) do
+                if obj.Name == "bond" and not processed[obj] then
+                    local serverEntity = obj:GetAttribute("serverEntity")
+                    if serverEntity then
+                        processed[obj] = true
+                        task.spawn(function()
+                            remoteRoot.Actionable:FireServer(serverEntity)
+                        end)
+                    end
+                end
+            end
+            task.wait()
+        end
+    end)
+
+    openFly()
+    wait(2)
+    local player = game.Players.LocalPlayer
+    local UIS = game:GetService("UserInputService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
+
+    local function getHRP()
+        local character = player.Character or player.CharacterAdded:Wait()
+        return character:WaitForChild("HumanoidRootPart")
+    end
+
+    local function isPlayerSitting()
+        local character = player.Character
+        if not character then return false end
+        local humanoid = character:FindFirstChild("Humanoid")
+        return humanoid and humanoid.SeatPart ~= nil
+    end
+
+    local points = {
+        CFrame.new(-640.667908, 35.0571709, 21950.3281),
+        CFrame.new(-115.775627, 49.8778229, 14062.6631),
+        CFrame.new(-168.12912, 80.0000534, 6071.42822),
+        CFrame.new(-533.117676, 36.3435669, -1781.96985),
+        CFrame.new(354.946167, 27.1051216, -8348.29395),
+        CFrame.new(94.0902328, 32.3177567, -17690.3359),
+        CFrame.new(-642.358032, 42.1449623, -25633.4668),
+        CFrame.new(212.387421, 56.2233772, -33732.6641),
+        CFrame.new(-196.918488, 48.4707794, -48867.3633)
+    }
+
+    local paused = false
+    local currentIndex = 1
+    local noclipEnabled = true
+
+    UIS.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if input.KeyCode == Enum.KeyCode.X then
+            paused = not paused
+        end
+    end)
+
+    local function getAllBonds()
+        local objectModels = workspace:FindFirstChild("ObjectModels")
+        if not objectModels then return {} end
+        local bonds = {}
+        for _, obj in ipairs(objectModels:GetChildren()) do
+            if obj.Name == "bond" and not processed[obj] then
+                table.insert(bonds, obj)
+            end
+        end
+        return bonds
+    end
+
+    local function waitForBond(timeout)
+        local objectModels = workspace:WaitForChild("ObjectModels")
+        local start = tick()
+        while true do
+            for _, obj in ipairs(objectModels:GetChildren()) do
+                if obj.Name == "bond" and not processed[obj] then
+                    return true
+                end
+            end
+            if timeout and tick() - start > timeout then
+                return false
+            end
+            task.wait()
+        end
+    end
+
+    local function getBanks()
+        local banks = {}
+        local function findBanks(parent)
+            for _, child in ipairs(parent:GetChildren()) do
+                if (child.Name == "Bank" or child.Name == "BankDestroyed") and not checkedBanks[child] then
+                    table.insert(banks, child)
+                end
+                findBanks(child)
+            end
+        end
+        findBanks(workspace)
+        return banks
+    end
+
+    local function getBankCFrame(bank)
+        if bank:IsA("Model") then
+            local pivot = bank.PrimaryPart and bank.PrimaryPart.CFrame or bank:GetPivot()
+            return pivot * CFrame.new(0, 30, 0)
+        elseif bank:IsA("BasePart") then
+            return CFrame.new(bank.Position + Vector3.new(0, 30, 0))
+        end
+        return CFrame.new(0,0,0)
+    end
+
+    local function processBonds(bonds, hrp)
+        local count = 0
+        for _, bond in ipairs(bonds) do
+            local targetCFrame
+            if bond:IsA("BasePart") then
+                targetCFrame = CFrame.new(bond.Position - Vector3.new(0, 20, 0))
+            elseif bond:IsA("Model") then
+                targetCFrame = (bond.PrimaryPart and bond.PrimaryPart.CFrame or bond:GetPivot()) * CFrame.new(0, -20, 0)
+            end
+            if targetCFrame then
+                hrp.CFrame = targetCFrame
+                local serverEntity = bond:GetAttribute("serverEntity")
+                if serverEntity then
+                    remote:FireServer(serverEntity)
+                    processed[bond] = true
+                    count = count + 1
+                    task.wait(0.5)
+                end
+            end
+        end
+        return count
+    end
+
+    local function enableNoclip()
+        local character = player.Character
+        if not character then return end
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+
+    player.CharacterAdded:Connect(function(character)
+        task.wait(0.5)
+        if noclipEnabled then enableNoclip() end
+    end)
+
+    task.spawn(function()
+        local hrp = getHRP()
+        if noclipEnabled then enableNoclip() end
+
+        while currentIndex <= #points do
+            if paused then
+                task.wait(0.1)
+            else
+                if not isPlayerSitting() then
+                    while not isPlayerSitting() do task.wait(1) end
+                    hrp = getHRP()
+                end
+
+                local special = workspace:FindFirstChild("Sterling")
+                if special and special:FindFirstChild("Town") and special.Town:FindFirstChild("Model") and special.Town.Model:FindFirstChild("ThreeDTextObject") then
+                    local mask = workspace:FindFirstChild("ObjectModels")
+                    if mask and mask:FindFirstChild("strange_mask") then
+                        local obj = mask.strange_mask
+                        if obj:IsA("BasePart") then
+                            hrp.CFrame = obj.CFrame
+                        elseif obj:IsA("Model") then
+                            hrp.CFrame = (obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:GetPivot())
+                        end
+                        task.wait(1)
+                    end
+                end
+
+                hrp.CFrame = points[currentIndex]
+                task.wait(1.5)
+
+                local hasBond = waitForBond(1.1)
+                local bonds = getAllBonds()
+                if #bonds > 0 then
+                    processBonds(bonds, hrp)
+                else
+                    local banks = getBanks()
+                    for _, bank in ipairs(banks) do
+                        checkedBanks[bank] = true
+                        hrp.CFrame = getBankCFrame(bank)
+                        if waitForBond(1.1) then
+                            local bankBonds = getAllBonds()
+                            if #bankBonds > 0 then
+                                processBonds(bankBonds, hrp)
+                            end
+                        end
+                    end
+                end
+
+                task.wait(0.5)
+                currentIndex = currentIndex + 1
+            end
+        end
+
+        local elapsed = math.floor(tick() - startTime)
+        print("ended in " .. elapsed .. " seconds")
+        game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+    end)
+end
+local teleportLocations = {
+    ["Spawn"] = CFrame.new(56.6396217, 3.24999976, 29936.3516),
+    ["10 KM"] = CFrame.new(-160.576843, 2.99617577, 19913.252),
+    ["20 KM"] = CFrame.new(-556.92572, 2.98922157, 9956.79883),
+    ["30 KM"] = CFrame.new(-569.779663, 2.99999976, 47.5958443),
+    ["40 KM"] = CFrame.new(-184.494064, 3.14674306, -9899.91797),
+    ["50 KM"] = CFrame.new(55.228714, 3.19885039, -19842.3789),
+    ["60 KM"] = CFrame.new(-199.620743, 3.14927387, -29733.9453),
+    ["70 KM"] = CFrame.new(-577.781921, 3.49909163, -39654.2148),
+    ["End"] = CFrame.new(-6, 55, -48749),
+    ["End2"] = CFrame.new(244, 77, -7751)
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local gameWorkspace = game:GetService("Workspace")
+
+local function findClosestVehicleSeat(position)
+    local closestSeat = nil
+    local minDistance = math.huge
+    for _, seat in ipairs(gameWorkspace:GetDescendants()) do
+        if seat:IsA("VehicleSeat") then
+            local distance = (position - seat.Position).Magnitude
+            if distance < minDistance then
+                minDistance = distance
+                closestSeat = seat
+            end
+        end
+    end
+    return closestSeat
+end
+
+local function teleportToLocation(locationName)
+    local Player = Players.LocalPlayer
+    if not Player.Character then
+        Player.CharacterAdded:Wait()
+    end
+    local Character = Player.Character
+    if Character and Character:FindFirstChild("HumanoidRootPart") then
+        local HRP = Character.HumanoidRootPart
+        local HUM = Character:FindFirstChildOfClass("Humanoid")
+        local cf = teleportLocations[locationName]
+        if not cf then return end
+        HRP.CFrame = cf
+        HRP.Anchored = true
+        task.wait(2)
+        local fseat = findClosestVehicleSeat(HRP.Position)
+        if fseat then
+            HRP.CFrame = fseat.CFrame + Vector3.new(0,3,0)
+            task.wait(0.15)
+            HRP.Anchored = false
+            task.wait(0.5)
+            fseat:Sit(HUM)
+        else
+            HRP.Anchored = false
+        end
+        task.wait(1)
+        if locationName == "End" then
+            HUM:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end
+local function autowin()
+    getgenv().vflyspeed = 0
+
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local player = Players.LocalPlayer
+    local cam = workspace.CurrentCamera
+
+    openFly()
+    wait(2)
+
+    local UIS = game:GetService("UserInputService")
+    local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
+
+    local function getHRP()
+        local character = player.Character or player.CharacterAdded:Wait()
+        return character:WaitForChild("HumanoidRootPart")
+    end
+
+    local function isPlayerSitting()
+        local character = player.Character
+        if not character then return false end
+        local humanoid = character:FindFirstChild("Humanoid")
+        return humanoid and humanoid.SeatPart ~= nil
+    end
+
+    local function enableNoclip()
+        RunService.Stepped:Connect(function()
+            local char = player.Character
+            if char then
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    local function setupPrompt(p)
+        if p:IsA("ProximityPrompt") then
+            p.RequiresLineOfSight = false
+            p.MaxActivationDistance = math.huge
+            p.HoldDuration = 0
+
+            task.spawn(function()
+                while p:IsDescendantOf(game) and p.Enabled do
+                    fireproximityprompt(p)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+
+    local function getCrank()
+        for _, v in ipairs(workspace.Baseplates:GetChildren()) do
+            local crank = v:FindFirstChild("Crank", true)
+            if crank then
+                return crank
+            end
+        end
+    end
+
+    local function teleportCrankForward()
+        local crank = getCrank()
+        if not crank then return end
+
+        local cf = cam.CFrame
+        local forward = cf.LookVector * 10
+        local newPos = cf.Position + forward
+
+        if crank:IsA("Model") then
+            crank:PivotTo(CFrame.new(newPos))
+        elseif crank:IsA("BasePart") then
+            crank.CFrame = CFrame.new(newPos)
+        end
+    end
+
+    local cf1 = CFrame.new(88.1307755, 2.99993873, -8085.49219, 0.999876618, 0, -0.0157076251, 0, 1, 0, 0.0157076251, 0, 0.999876618)
+    local cf2 = CFrame.new(-66.6561584, 2.99993873, -49044.6445)
+
+    local function getChar()
+        return player.Character or player.CharacterAdded:Wait()
+    end
+
+    local function getRoot()
+        return getChar():WaitForChild("HumanoidRootPart")
+    end
+
+    enableNoclip()
+
+    task.spawn(function()
+        while task.wait() do
+            if isPlayerSitting() then
+                local hrp = getRoot()
+
+
+                if getgenv().party_mode == 'Normal' or getgenv().party_mode == nil then
+                    hrp.CFrame = cf2
+                else
+                    hrp.CFrame = cf1                    
+                end
+
+                teleportCrankForward()
+            end
+        end
+    end)
+
+    wait(3)
+
+    for _, p in ipairs(workspace:GetDescendants()) do
+        setupPrompt(p)
+    end
+
+    workspace.DescendantAdded:Connect(setupPrompt)
+end
+
+local railSegments = nil
+local sawedOffSign = nil
+
+while not (railSegments or sawedOffSign) do
+    if not railSegments then
+        local folder = workspace:FindFirstChild("RailSegments")
+        if folder and #folder:GetChildren() > 0 then
+            railSegments = folder
+            print("ingame")
+task.spawn(function()
+    local p = game.Players.LocalPlayer
+    local t = p.PlayerGui:WaitForChild("TutorialGui"):WaitForChild("TutorialText")
+
+    local totalSeconds = nil
+
+    local function parseTime(str)
+        local m, s = str:match("(%d+):(%d+)")
+        if m and s then
+            return tonumber(m) * 60 + tonumber(s)
+        end
+    end
+
+    local function findCrankTime()
+        local baseplate = workspace:FindFirstChild("Baseplates")
+        if not baseplate then return end
+
+        for _, bp in ipairs(baseplate:GetChildren()) do
+            local enemyBase = bp:FindFirstChild("EnemyBase")
+            if enemyBase then
+                local bridge = enemyBase:FindFirstChild("Bridge")
+                if bridge then
+                    local controlPart = bridge:FindFirstChild("BridgeControl")
+                    if controlPart then
+                        local part = controlPart:FindFirstChild("Part")
+                        if part then
+                            local gui = part:FindFirstChild("BillboardGui")
+                            if gui and gui.Enabled then
+                                local label = gui:FindFirstChild("TextLabel")
+                                if label then
+                                    return parseTime(label.Text)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local startTime = tick()
+    while tick() - startTime < 3 and not totalSeconds do
+        totalSeconds = findCrankTime()
+        task.wait(0.3)
+    end
+
+    if not totalSeconds then
+        totalSeconds = 600
+    end
+
+    while totalSeconds > 0 do
+        local m = math.floor(totalSeconds / 60)
+        local s = totalSeconds % 60
+
+        t.Text = string.format("Crank will available in %02d:%02d", m, s)
+
+        totalSeconds -= 1
+        task.wait(1)
+    end
+
+    t.Text = "Crank is available"
+end)
+
+            if getgenv().auto_win then
+                  line1, animatedText, timeText = createCustomGui(
+        "<font color='rgb(255,0,0)'>Moondiety </font>Auto win farm",
+        true,
+        "dev - govorgub",
+        "stay safe, farm fast",
+        "keep hands off while AutoWin active",
+        "join our discord - moondiety"
+
+    )
+                autowin()
+            end
+            if getgenv().auto_bond then
+                local objectModels = workspace.ObjectModels
+local crate
+
+repeat
+    crate = nil
+    for _, obj in ipairs(objectModels:GetChildren()) do
+        if obj.Name == "crate" then
+            crate = obj
+            break
+        end
+    end
+    task.wait(0.1)
+until crate ~= nil
+
+print("Crate найден:", crate)
+                    line1, animatedText, timeText = createCustomGui(
+        "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds farm",
+        false,
+        "dev - govorgub",
+        "stay safe, farm fast",
+        "keep hands off while AutoWin active",
+        "join our discord - moondiety"
+    )
+
+        wait(2)
+                autoBonds()
+            end
+        end
+    end
+    if not sawedOffSign then
+        local signsFolder = workspace:FindFirstChild("Signs")
+        local sign = signsFolder and signsFolder:FindFirstChild("Sawed-Off Shotgun AD")
+        if sign then
+            sawedOffSign = sign
+            print("inlobby")
+            if getgenv().auto_bond or getgenv().auto_win then
+                line1, animatedText, timeText = createCustomGui(
+        "<font color='rgb(255,0,0)'>Moondiety </font>Auto lobby creation",
+        false,
+        "dev - govorgub",
+        "stay safe, farm fast",
+        "keep hands off while AutoWin active",
+        "join our discord - moondiety"
+    )
+            PartyTeleport()
+            end
+        end
+    end
+    task.wait(0.1)
+end
+
+local auto_bond = getgenv().auto_bond
+local auto_win = getgenv().auto_win
+local party_mode = getgenv().party_mode
+
+local script_to_queue = string.format([[
+    getgenv().auto_bond = %s
+    getgenv().auto_win = %s
+    getgenv().party_mode = %s
+
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/2663753ba044269e6f594ebb4ca94082.lua"))()
+]], 
+    tostring(auto_bond),
+    tostring(auto_win),
+    party_mode and string.format("%q", party_mode) or "nil"
+)
+
+queue_on_teleport(script_to_queue)
