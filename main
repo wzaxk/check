@@ -1,6 +1,13 @@
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 
+local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
+local playerGui = player:WaitForChild("PlayerGui")
+local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
 local function createCustomGui(message1, showMessage3, ...)
     local Lighting = game:GetService("Lighting")
     local Players = game:GetService("Players")
