@@ -5,9 +5,6 @@ local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
-
-if not game:IsLoaded() then game.Loaded:Wait() end
-
 local function createCustomGui(message1, showMessage3, ...)
     local Lighting = game:GetService("Lighting")
     local Players = game:GetService("Players")
@@ -1220,13 +1217,6 @@ local script_to_queue = string.format([[
     getgenv().party_mode = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
-    
-    queue_on_teleport([[
-        getgenv().auto_bond = %s
-        getgenv().auto_win = %s
-        getgenv().party_mode = %s
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
-    ]])
 ]], 
     tostring(auto_bond),
     tostring(auto_win),
