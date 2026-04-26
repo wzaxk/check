@@ -1221,13 +1221,7 @@ local script_to_queue = string.format([[
     getgenv().party_mode = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
-    
-    queue_on_teleport([[
-        getgenv().auto_bond = %s
-        getgenv().auto_win = %s
-        getgenv().party_mode = %s
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
-    ]])
+ 
 ]], 
     tostring(auto_bond),
     tostring(auto_win),
