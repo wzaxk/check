@@ -1,23 +1,5 @@
 
-
-task.spawn(function()
-    local plr = game:GetService("Players").LocalPlayer
-    local rs = game:GetService("ReplicatedStorage")
-
-    while task.wait(1) do
-        local gui = plr.PlayerGui:FindFirstChild("EndScreen")
-        if gui and gui.Enabled then
-            rs.Remotes.ReturnToLooby:FireServer()
-        end
-    end
-end)
-
 if not game:IsLoaded() then game.Loaded:Wait() end
-local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
-local playerGui = player:WaitForChild("PlayerGui")
-local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-local t = tick()
-while gui:FindFirstChild("DetailTextLabel", true) and tick() - t < 30 do task.wait() end
 
 local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
@@ -195,7 +177,7 @@ local function PartyTeleport()
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local RunService = game:GetService("RunService")
     local TeleportService = game:GetService("TeleportService")
-    local HttpService = game:GetService("HttpService")
+
     local player = Players.LocalPlayer
     local connection
 
@@ -240,7 +222,6 @@ local function PartyTeleport()
     end
 
     local function createParty()
-
         local args = {
             {
                 isPrivate = getgenv().isPrivate == true,
@@ -282,20 +263,25 @@ local function PartyTeleport()
         if now - lastCheck >= 1 then
             lastCheck = now
 
-          
             if partyRequestTime and now - partyRequestTime >= 15 then
-              
                 local placeId = game.PlaceId
                 local success, servers = pcall(function()
-                    return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"))
+                    return TeleportService:GetPlayerPlaceInstancesAsync(placeId)
                 end)
-                if success and servers.data then
-                    for _, s in ipairs(servers.data) do
-                        if s.playing < s.maxPlayers then
-                            TeleportService:TeleportToPlaceInstance(placeId, s.id, player)
-                            return
+
+                if success and servers then
+                    local page = servers
+                    repeat
+                        for _, server in ipairs(page:GetCurrentPage()) do
+                            if server.Playing < server.MaxPlayers then
+                                TeleportService:TeleportToPlaceInstance(placeId, server.Id, player)
+                                return
+                            end
                         end
-                    end
+                        if not page.IsFinished then
+                            page:AdvanceToNextPageAsync()
+                        end
+                    until page.IsFinished
                 end
             end
 
@@ -1235,6 +1221,13 @@ local script_to_queue = string.format([[
     getgenv().party_mode = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
+    
+    queue_on_teleport([[
+        getgenv().auto_bond = %s
+        getgenv().auto_win = %s
+        getgenv().party_mode = %s
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
+    ]])
 ]], 
     tostring(auto_bond),
     tostring(auto_win),
