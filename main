@@ -1,5 +1,23 @@
 
+
+task.spawn(function()
+    local plr = game:GetService("Players").LocalPlayer
+    local rs = game:GetService("ReplicatedStorage")
+
+    while task.wait(1) do
+        local gui = plr.PlayerGui:FindFirstChild("EndScreen")
+        if gui and gui.Enabled then
+            rs.Remotes.ReturnToLooby:FireServer()
+        end
+    end
+end)
+
 if not game:IsLoaded() then game.Loaded:Wait() end
+local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
+local playerGui = player:WaitForChild("PlayerGui")
+local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local t = tick()
+while gui:FindFirstChild("DetailTextLabel", true) and tick() - t < 30 do task.wait() end
 
 local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
@@ -1298,6 +1316,18 @@ repeat
 until crate ~= nil
 
 print("Crate найден:", crate)
+		if getgenv().auto_win2 then
+			                    line1, animatedText, timeText = createCustomGui(
+        "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds farm",
+        true,
+        "dev - govorgub",
+        "stay safe, farm fast",
+        "keep hands off while AutoWin active",
+        "join our discord - moondiety"
+    )
+
+
+		else
                     line1, animatedText, timeText = createCustomGui(
         "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds farm",
         false,
@@ -1305,7 +1335,7 @@ print("Crate найден:", crate)
         "stay safe, farm fast",
         "keep hands off while AutoWin active",
         "join our discord - moondiety"
-    )
+    ) end
 
         wait(2)
                 autoBonds()
