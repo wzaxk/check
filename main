@@ -1,5 +1,5 @@
 
---1338
+--1337
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -702,9 +702,11 @@ task.spawn(function()
 
         local last = hrp.Position
         local t = 0
+        local totalTime = 0
 
         while c.Parent and getgenv().timer do
             task.wait(1)
+            totalTime += 1
 
             if (hrp.Position - last).Magnitude < 0.5 then
                 t += 1
@@ -714,6 +716,11 @@ task.spawn(function()
             end
 
             if t >= 15 then
+                game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+                break
+            end
+
+            if totalTime >= 50 then
                 game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
                 break
             end
