@@ -23,6 +23,23 @@ local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health <= 0 then
+                game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+                break
+            end
+        end
+    end
+end)
+
+
 local function createCustomGui(message1, showMessage3, ...)
     local Lighting = game:GetService("Lighting")
     local Players = game:GetService("Players")
