@@ -190,6 +190,34 @@ end
 
 local line1, animatedText, timeText
 local function PartyTeleport()
+
+	task.spawn(function()
+		task.wait(15)
+		
+			local Player = game.Players.LocalPlayer    
+			local Http = game:GetService("HttpService")
+			local TPS = game:GetService("TeleportService")
+			local Api = "https://games.roblox.com/v1/games/"
+
+			local _place,_id = game.PlaceId, game.JobId
+
+			local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=10"
+			function ListServers(cursor)
+			local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+			return Http:JSONDecode(Raw)
+			end
+
+			time_to_wait = 1
+
+			while wait(time_to_wait) do
+			
+			Player.Character.HumanoidRootPart.Anchored = true
+			local Servers = ListServers()
+			local Server = Servers.data[math.random(1,#Servers.data)]
+			TPS:TeleportToPlaceInstance(_place, Server.id, Player)
+			end
+	end)
+
     local TweenService = game:GetService("TweenService")
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -278,30 +306,6 @@ local function PartyTeleport()
 
     connection = RunService.Heartbeat:Connect(function()
         local now = tick()
-        if now - lastCheck >= 1 then
-            lastCheck = now
-
-            if partyRequestTime and now - partyRequestTime >= 15 then
-                local placeId = game.PlaceId
-                local success, servers = pcall(function()
-                    return TeleportService:GetPlayerPlaceInstancesAsync(placeId)
-                end)
-
-                if success and servers then
-                    local page = servers
-                    repeat
-                        for _, server in ipairs(page:GetCurrentPage()) do
-                            if server.Playing < server.MaxPlayers then
-                                TeleportService:TeleportToPlaceInstance(placeId, server.Id, player)
-                                return
-                            end
-                        end
-                        if not page.IsFinished then
-                            page:AdvanceToNextPageAsync()
-                        end
-                    until page.IsFinished
-                end
-            end
 
             if not zoneLocked then
                 local zone = findAvailableTeleportZone()
@@ -325,7 +329,7 @@ local function PartyTeleport()
                     partyRequestTime = nil
                 end
             end
-        end
+
     end)
 
     return function()
@@ -335,6 +339,7 @@ local function PartyTeleport()
         end
     end
 end
+
 
 
 local Players = game:GetService("Players")
