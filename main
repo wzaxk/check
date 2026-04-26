@@ -1,4 +1,4 @@
---123
+--1234
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
