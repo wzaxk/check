@@ -1318,7 +1318,7 @@ until crate ~= nil
 print("Crate найден:", crate)
 		if getgenv().auto_win2 then
 			                    line1, animatedText, timeText = createCustomGui(
-        "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds farm",
+        "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds & win farm",
         true,
         "dev - govorgub",
         "stay safe, farm fast",
