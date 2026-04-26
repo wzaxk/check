@@ -1,5 +1,5 @@
 
-
+--123
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -191,33 +191,6 @@ end
 local line1, animatedText, timeText
 local function PartyTeleport()
 
-	task.spawn(function()
-		task.wait(15)
-		
-			local Player = game.Players.LocalPlayer    
-			local Http = game:GetService("HttpService")
-			local TPS = game:GetService("TeleportService")
-			local Api = "https://games.roblox.com/v1/games/"
-
-			local _place,_id = game.PlaceId, game.JobId
-
-			local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=10"
-			function ListServers(cursor)
-			local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
-			return Http:JSONDecode(Raw)
-			end
-
-			time_to_wait = 1
-
-			while wait(time_to_wait) do
-			
-			Player.Character.HumanoidRootPart.Anchored = true
-			local Servers = ListServers()
-			local Server = Servers.data[math.random(1,#Servers.data)]
-			TPS:TeleportToPlaceInstance(_place, Server.id, Player)
-			end
-	end)
-
     local TweenService = game:GetService("TweenService")
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -267,17 +240,6 @@ local function PartyTeleport()
         end
     end
 
-    local function createParty()
-        local args = {
-            {
-                isPrivate = getgenv().isPrivate == true,
-                maxMembers = getgenv().party_members or 1,
-                trainId = "default",
-                gameMode = getgenv().party_mode or "Normal"
-            }
-        }
-        ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
-    end
 
     local function walkAroundPosition(centerCFrame, radius, duration, angularSpeed)
         local character = getCharacter()
@@ -303,23 +265,36 @@ local function PartyTeleport()
     local currentZone = nil
     local zoneLocked = false
     local partyRequestTime = nil
-
-    connection = RunService.Heartbeat:Connect(function()
-        local now = tick()
+ task.spawn(function()
+ while task.wait(1) do
 
             if not zoneLocked then
                 local zone = findAvailableTeleportZone()
                 if zone then
+
                     teleportToTop(zone.PrimaryPart)
-                    partyRequestTime = tick()
+					currentZone = zone
+                    zoneLocked = true
+					
                     task.spawn(function()
-                        task.wait(0.5)
-                        createParty()
-                        task.wait(0.5)
+						while task.wait(1) do
+							local label = getStatusLabel(currentZone)
+							if label and label.Text == "Creating Party" then
+							local args = {
+										{
+											isPrivate = getgenv().isPrivate or true,
+											maxMembers = getgenv().party_members or 1,
+											trainId = "default",
+											gameMode = getgenv().party_mode or "Normal"
+										}
+									}
+									ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
+								print('attempt')
+							end
+						end
                         walkAroundPosition(zone.PrimaryPart.CFrame, 3, 10, 0.015)
                     end)
-                    currentZone = zone
-                    zoneLocked = true
+
                 end
             elseif currentZone then
                 local label = getStatusLabel(currentZone)
@@ -330,17 +305,9 @@ local function PartyTeleport()
                 end
             end
 
-    end)
-
-    return function()
-        if connection then
-            connection:Disconnect()
-            connection = nil
-        end
-    end
 end
-
-
+end)
+end
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
