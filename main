@@ -1,4 +1,4 @@
-
+--123
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
@@ -895,7 +895,115 @@ end)
 
         local elapsed = math.floor(tick() - startTime)
         print("ended in " .. elapsed .. " seconds")
+        if getgenv().auto_win2 then
+
+    local UIS = game:GetService("UserInputService")
+    local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
+
+    local function getHRP()
+        local character = player.Character or player.CharacterAdded:Wait()
+        return character:WaitForChild("HumanoidRootPart")
+    end
+
+    local function isPlayerSitting()
+        local character = player.Character
+        if not character then return false end
+        local humanoid = character:FindFirstChild("Humanoid")
+        return humanoid and humanoid.SeatPart ~= nil
+    end
+
+    local function enableNoclip()
+        RunService.Stepped:Connect(function()
+            local char = player.Character
+            if char then
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    local function setupPrompt(p)
+        if p:IsA("ProximityPrompt") then
+            p.RequiresLineOfSight = false
+            p.MaxActivationDistance = math.huge
+            p.HoldDuration = 0
+
+            task.spawn(function()
+                while p:IsDescendantOf(game) and p.Enabled do
+                    fireproximityprompt(p)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+
+    local function getCrank()
+        for _, v in ipairs(workspace.Baseplates:GetChildren()) do
+            local crank = v:FindFirstChild("Crank", true)
+            if crank then
+                return crank
+            end
+        end
+    end
+
+    local function teleportCrankForward()
+        local crank = getCrank()
+        if not crank then return end
+
+        local cf = cam.CFrame
+        local forward = cf.LookVector * 10
+        local newPos = cf.Position + forward
+
+        if crank:IsA("Model") then
+            crank:PivotTo(CFrame.new(newPos))
+        elseif crank:IsA("BasePart") then
+            crank.CFrame = CFrame.new(newPos)
+        end
+    end
+
+    local cf1 = CFrame.new(88.1307755, 2.99993873, -8085.49219, 0.999876618, 0, -0.0157076251, 0, 1, 0, 0.0157076251, 0, 0.999876618)
+    local cf2 = CFrame.new(-66.6561584, 2.99993873, -49044.6445)
+
+    local function getChar()
+        return player.Character or player.CharacterAdded:Wait()
+    end
+
+    local function getRoot()
+        return getChar():WaitForChild("HumanoidRootPart")
+    end
+
+    enableNoclip()
+
+    task.spawn(function()
+        while task.wait() do
+            if isPlayerSitting() then
+                local hrp = getRoot()
+
+
+                if getgenv().party_mode == 'Normal' or getgenv().party_mode == nil then
+                    hrp.CFrame = cf2
+                else
+                    hrp.CFrame = cf1                    
+                end
+
+                teleportCrankForward()
+            end
+        end
+    end)
+
+    wait(3)
+
+    for _, p in ipairs(workspace:GetDescendants()) do
+        setupPrompt(p)
+    end
+
+    workspace.DescendantAdded:Connect(setupPrompt)
+    else
         game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+    end
     end)
 end
 local teleportLocations = {
@@ -1218,13 +1326,15 @@ end
 local script_to_queue = string.format([[
     getgenv().auto_bond = %s
     getgenv().auto_win = %s
+	getgenv().auto_win2 = %s
     getgenv().party_mode = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
- 
+    
 ]], 
     tostring(auto_bond),
     tostring(auto_win),
+	tostring(auto_win2),
     party_mode and string.format("%q", party_mode) or "nil",
     tostring(auto_bond),
     tostring(auto_win),
