@@ -680,46 +680,21 @@ task.spawn(function()
 end)
 
     local startTime = tick()
-    local remoteRoot = game:GetService("ReplicatedStorage").Shared.Universe.Network.RemoteEvent
-    local processed = {}
-    local checkedBanks = {}
+      local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local startPos = hrp.CFrame + Vector3.new(0, 3, 0)
 
-    task.spawn(function()
-        while true do
-            local objectModels = workspace:WaitForChild("ObjectModels")
-            for _, obj in ipairs(objectModels:GetChildren()) do
-                if obj.Name == "bond" and not processed[obj] then
-                    local serverEntity = obj:GetAttribute("serverEntity")
-                    if serverEntity then
-                        processed[obj] = true
-                        task.spawn(function()
-                            remoteRoot.Actionable:FireServer(serverEntity)
-                        end)
-                    end
-                end
-            end
-            task.wait()
-        end
-    end)
-
-    openFly()
-    wait(2)
-    local player = game.Players.LocalPlayer
-    local UIS = game:GetService("UserInputService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
-
-    local function getHRP()
-        local character = player.Character or player.CharacterAdded:Wait()
-        return character:WaitForChild("HumanoidRootPart")
+    if not flyActive then
+        openFly()
     end
 
-    local function isPlayerSitting()
-        local character = player.Character
-        if not character then return false end
-        local humanoid = character:FindFirstChild("Humanoid")
-        return humanoid and humanoid.SeatPart ~= nil
+    while not (state.horseMounted and FLYING) do
+        task.wait(0.2)
     end
+
+    hrp.CFrame = startPos
+    task.wait(0.6)
 
     local points = {
         CFrame.new(-640.667908, 35.0571709, 21950.3281),
@@ -730,161 +705,78 @@ end)
         CFrame.new(94.0902328, 32.3177567, -17690.3359),
         CFrame.new(-642.358032, 42.1449623, -25633.4668),
         CFrame.new(212.387421, 56.2233772, -33732.6641),
-        CFrame.new(-196.918488, 48.4707794, -48867.3633)
+        CFrame.new(-196.918488, 48.4707794, -48867.3633),
+        CFrame.new(-50.918488, 48.4707794, -48867.3633)
     }
 
-    local paused = false
-    local currentIndex = 1
-    local noclipEnabled = true
+    local remote = game:GetService("ReplicatedStorage")
+        :WaitForChild("Shared")
+        :WaitForChild("Universe")
+        :WaitForChild("Network")
+        :WaitForChild("RemoteEvent")
+        :WaitForChild("Actionable")
 
-    UIS.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if input.KeyCode == Enum.KeyCode.X then
-            paused = not paused
-        end
-    end)
-
-    local function getAllBonds()
-        local objectModels = workspace:FindFirstChild("ObjectModels")
-        if not objectModels then return {} end
-        local bonds = {}
-        for _, obj in ipairs(objectModels:GetChildren()) do
-            if obj.Name == "bond" and not processed[obj] then
-                table.insert(bonds, obj)
-            end
-        end
-        return bonds
-    end
-
-    local function waitForBond(timeout)
-        local objectModels = workspace:WaitForChild("ObjectModels")
-        local start = tick()
-        while true do
-            for _, obj in ipairs(objectModels:GetChildren()) do
-                if obj.Name == "bond" and not processed[obj] then
-                    return true
-                end
-            end
-            if timeout and tick() - start > timeout then
-                return false
-            end
-            task.wait()
-        end
-    end
+    local visitedBanks = {}
 
     local function getBanks()
         local banks = {}
-        local function findBanks(parent)
-            for _, child in ipairs(parent:GetChildren()) do
-                if (child.Name == "Bank" or child.Name == "BankDestroyed") and not checkedBanks[child] then
-                    table.insert(banks, child)
+
+        local function scan(parent)
+            for _, v in ipairs(parent:GetChildren()) do
+                if v.Name == "Bank" or v.Name == "BankDestroyed" then
+                    table.insert(banks, v)
                 end
-                findBanks(child)
+                scan(v)
             end
         end
-        findBanks(workspace)
+
+        scan(workspace)
         return banks
     end
 
     local function getBankCFrame(bank)
         if bank:IsA("Model") then
-            local pivot = bank.PrimaryPart and bank.PrimaryPart.CFrame or bank:GetPivot()
-            return pivot * CFrame.new(0, 30, 0)
+            return (bank.PrimaryPart and bank.PrimaryPart.CFrame or bank:GetPivot()) * CFrame.new(0, 30, 0)
         elseif bank:IsA("BasePart") then
             return CFrame.new(bank.Position + Vector3.new(0, 30, 0))
         end
-        return CFrame.new(0,0,0)
     end
 
-    local function processBonds(bonds, hrp)
-        local count = 0
-        for _, bond in ipairs(bonds) do
-            local targetCFrame
-            if bond:IsA("BasePart") then
-                targetCFrame = CFrame.new(bond.Position - Vector3.new(0, 20, 0))
-            elseif bond:IsA("Model") then
-                targetCFrame = (bond.PrimaryPart and bond.PrimaryPart.CFrame or bond:GetPivot()) * CFrame.new(0, -20, 0)
-            end
-            if targetCFrame then
-                hrp.CFrame = targetCFrame
-                local serverEntity = bond:GetAttribute("serverEntity")
-                if serverEntity then
-                    remote:FireServer(serverEntity)
-                    processed[bond] = true
-                    count = count + 1
-                    task.wait(0.5)
+    local function scanBond()
+        local objectModels = workspace:WaitForChild("ObjectModels")
+
+        for _, obj in ipairs(objectModels:GetChildren()) do
+            if obj.Name == "bond" then
+                local id = obj:GetAttribute("serverEntity")
+                if id then
+                    remote:FireServer(id)
                 end
             end
         end
-        return count
     end
 
-    local function enableNoclip()
-        local character = player.Character
-        if not character then return end
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
+    local function handleBanks()
+        local banks = getBanks()
+
+        for _, bank in ipairs(banks) do
+            if not visitedBanks[bank] then
+                hrp.CFrame = getBankCFrame(bank)
+                visitedBanks[bank] = true
+                task.wait(0.3)
+
+                scanBond()
+                task.wait(0.5)
             end
         end
     end
-
-    player.CharacterAdded:Connect(function(character)
-        task.wait(0.5)
-        if noclipEnabled then enableNoclip() end
-    end)
 
     task.spawn(function()
-        local hrp = getHRP()
-        if noclipEnabled then enableNoclip() end
+        for _, point in ipairs(points) do
+            hrp.CFrame = point
+            task.wait(0.5)
 
-        while currentIndex <= #points do
-            if paused then
-                task.wait(0.1)
-            else
-                if not isPlayerSitting() then
-                    while not isPlayerSitting() do task.wait(1) end
-                    hrp = getHRP()
-                end
-
-                local special = workspace:FindFirstChild("Sterling")
-                if special and special:FindFirstChild("Town") and special.Town:FindFirstChild("Model") and special.Town.Model:FindFirstChild("ThreeDTextObject") then
-                    local mask = workspace:FindFirstChild("ObjectModels")
-                    if mask and mask:FindFirstChild("strange_mask") then
-                        local obj = mask.strange_mask
-                        if obj:IsA("BasePart") then
-                            hrp.CFrame = obj.CFrame
-                        elseif obj:IsA("Model") then
-                            hrp.CFrame = (obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:GetPivot())
-                        end
-                        task.wait(1)
-                    end
-                end
-
-                hrp.CFrame = points[currentIndex]
-                task.wait(1.5)
-
-                local hasBond = waitForBond(1.1)
-                local bonds = getAllBonds()
-                if #bonds > 0 then
-                    processBonds(bonds, hrp)
-                else
-                    local banks = getBanks()
-                    for _, bank in ipairs(banks) do
-                        checkedBanks[bank] = true
-                        hrp.CFrame = getBankCFrame(bank)
-                        if waitForBond(1.1) then
-                            local bankBonds = getAllBonds()
-                            if #bankBonds > 0 then
-                                processBonds(bankBonds, hrp)
-                            end
-                        end
-                    end
-                end
-
-                task.wait(0.5)
-                currentIndex = currentIndex + 1
-            end
+            scanBond()
+            handleBanks()
         end
 
         local elapsed = math.floor(tick() - startTime)
