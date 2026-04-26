@@ -660,9 +660,9 @@ end
 
 local function autoBonds()
     local p = game.Players.LocalPlayer
-
+ getgenv().timer=true
 task.spawn(function()
-    while true do
+    while true and getgenv().timer do
         local c = p.Character or p.CharacterAdded:Wait()
         local hrp = c:WaitForChild("HumanoidRootPart")
 
@@ -896,7 +896,7 @@ end)
         local elapsed = math.floor(tick() - startTime)
         print("ended in " .. elapsed .. " seconds")
         if getgenv().auto_win2 then
-
+        	getgenv().timer=false
     local UIS = game:GetService("UserInputService")
     local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
 
