@@ -1,4 +1,4 @@
---1234
+
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
@@ -660,17 +660,20 @@ end
 
 local function autoBonds()
     local p = game.Players.LocalPlayer
- getgenv().timer=true
+
+getgenv().timer = true
+
 task.spawn(function()
-    while true and getgenv().timer do
+    while getgenv().timer do
         local c = p.Character or p.CharacterAdded:Wait()
         local hrp = c:WaitForChild("HumanoidRootPart")
 
         local last = hrp.Position
         local t = 0
 
-        while c.Parent do
+        while c.Parent and getgenv().timer do
             task.wait(1)
+
             if (hrp.Position - last).Magnitude < 0.5 then
                 t += 1
             else
@@ -685,6 +688,7 @@ task.spawn(function()
         end
     end
 end)
+
     local startTime = tick()
     local remoteRoot = game:GetService("ReplicatedStorage").Shared.Universe.Network.RemoteEvent
     local processed = {}
@@ -895,7 +899,14 @@ end)
 
         local elapsed = math.floor(tick() - startTime)
         print("ended in " .. elapsed .. " seconds")
+
         if getgenv().auto_win2 then
+        	    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local player = Players.LocalPlayer
+    local cam = workspace.CurrentCamera
+    
         	getgenv().timer=false
     local UIS = game:GetService("UserInputService")
     local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
