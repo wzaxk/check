@@ -1,5 +1,5 @@
 
---1337
+--13399
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -7,11 +7,7 @@ task.spawn(function()
     while task.wait(1) do
         local gui = plr.PlayerGui:FindFirstChild("EndScreen")
         if gui and gui.Enabled then
-            wait(5)
-            local args = {
-                false
-            }
-            game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("EndDecision"):FireServer(unpack(args))
+            rs.Remotes.ReturnToLooby:FireServer()
         end
     end
 end)
@@ -27,7 +23,21 @@ local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
-getgenv().kolvobond = 0
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health <= 0 then
+                game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+                break
+            end
+        end
+    end
+end)
 
 
 local function createCustomGui(message1, showMessage3, ...)
@@ -305,25 +315,25 @@ end)
                 if zone then
 
                     teleportToTop(zone.PrimaryPart)
-                    currentZone = zone
+					currentZone = zone
                     zoneLocked = true
-                    
+					
                     task.spawn(function()
-                        while task.wait(1) do
-                            local label = getStatusLabel(currentZone)
-                            if label and label.Text == "Creating Party" then
-                            local args = {
-                                        {
-                                            isPrivate = getgenv().isPrivate or false,
-                                            maxMembers = getgenv().party_members or 1,
-                                            trainId = "default",
-                                            gameMode = getgenv().party_mode or "Normal"
-                                        }
-                                    }
-                                    ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
-                                print('attempt')
-                            end
-                        end
+						while task.wait(1) do
+							local label = getStatusLabel(currentZone)
+							if label and label.Text == "Creating Party" then
+							local args = {
+										{
+											isPrivate = getgenv().isPrivate or true,
+											maxMembers = getgenv().party_members or 1,
+											trainId = "default",
+											gameMode = getgenv().party_mode or "Normal"
+										}
+									}
+									ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
+								print('attempt')
+							end
+						end
                         walkAroundPosition(zone.PrimaryPart.CFrame, 3, 10, 0.015)
                     end)
 
@@ -686,41 +696,48 @@ local function autoBonds()
 getgenv().timer = true
 
 task.spawn(function()
+    local p = game.Players.LocalPlayer
+
     while getgenv().timer do
         local c = p.Character or p.CharacterAdded:Wait()
         local hrp = c:WaitForChild("HumanoidRootPart")
+        local humanoid = c:WaitForChild("Humanoid")
 
-        local last = hrp.Position
-        local t = 0
+        local lastPos = hrp.Position
+        local afkTime = 0
         local totalTime = 0
 
         while c.Parent and getgenv().timer do
             task.wait(1)
+
             totalTime += 1
 
-            if (hrp.Position - last).Magnitude < 0.5 then
-                t += 1
+            if (hrp.Position - lastPos).Magnitude < 0.5 then
+                afkTime += 1
             else
-                t = 0
-                last = hrp.Position
+                afkTime = 0
+                lastPos = hrp.Position
             end
 
-            if t >= 15 then
-                     local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-
-local humanoid = char:WaitForChild("Humanoid")
-humanoid.Health = 0
+            if afkTime >= 15 then
+                humanoid.Health = 0
                 break
             end
 
-            if totalTime >= 120 then
-           game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+            if totalTime >= 10 then
+                local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
+                local remote = remotes:FindFirstChild("ReturnToLooby")
+
+                if remote then
+                    remote:FireServer()
+                end
+
                 break
             end
         end
     end
 end)
+
     local startTime = tick()
       local player = game.Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
@@ -787,17 +804,14 @@ end)
     local function scanBond()
         local objectModels = workspace:WaitForChild("ObjectModels")
 
-       for _, obj in ipairs(objectModels:GetChildren()) do
-    if obj.Name == "bond" then
-        local id = obj:GetAttribute("serverEntity")
-        if id then
-            getgenv().kolvobond += 1 
-    
-            remote:FireServer(id)
-            task.wait(.1)
+        for _, obj in ipairs(objectModels:GetChildren()) do
+            if obj.Name == "bond" then
+                local id = obj:GetAttribute("serverEntity")
+                if id then
+                    remote:FireServer(id)
+                end
+            end
         end
-    end
-    end
     end
 
     local function handleBanks()
@@ -826,75 +840,15 @@ end)
 
         local elapsed = math.floor(tick() - startTime)
         print("ended in " .. elapsed .. " seconds")
-        if getgenv().webhookUrl ~= nil then
-            local Players = game:GetService("Players")
-            local HttpService = game:GetService("HttpService")
 
-            local player = Players.LocalPlayer
-            local userId = player.UserId
-
-            local response = game:HttpGet(
-                "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="
-                .. userId ..
-                "&size=420x420&format=Png&isCircular=false"
-            )
-
-            local decoded = HttpService:JSONDecode(response)
-            local thumbUrl = decoded.data[1].imageUrl
-                            local clocks = {
-                        "🕐","🕑","🕒","🕓","🕔","🕕",
-                        "🕖","🕗","🕘","🕙","🕚","🕛"
-                    }
-                    
-                    local randomClock = clocks[math.random(1, #clocks)]
-
-            local player = game:GetService("Players").LocalPlayer
-local bondCount = player.PlayerGui.BondGui.BondInfo.BondCount
-            local data = {
-                ["username"] = "Moondiety Log",
-                ["avatar_url"] = "https://images-ext-1.discordapp.net/external/bCL2bmCy5myVCFPUgCWuMRidBoNsqZHo1otg2kjRIx8/https/cdn.discordapp.com/icons/1369029597684957295/a_7c05b16000d7f86e970b33e342d68a1b.gif",
-
-                ["embeds"] = {{
-                    ["title"] = "Script Finished",
-                    
-
-                   ["description"] = "```" .. string.format(
-    "%s (%s)\n💵 Collected bonds: %s\n💰 Total bonds: %s\n%s Ended in %s seconds",
-    player.Name,
-    player.DisplayName,
-    tostring(getgenv().kolvobond),
-    tostring(bondCount.Text), 
-    randomClock,
-    tostring(elapsed)
-) .. "```",
-                    ["color"] = 0x2ecc71,
-
-                    ["thumbnail"] = {
-                        ["url"] = thumbUrl 
-                    }
-                }}
-            }
-
-            local requestFunc = http_request or request or (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request)
-
-            if requestFunc then
-                requestFunc({
-                    Url = getgenv().webhookUrl,
-                    Body = HttpService:JSONEncode(data),
-                    Method = "POST",
-                    Headers = {["content-type"] = "application/json"}
-                })
-            end
-
-        end
         if getgenv().auto_win2 then
-                local Players = game:GetService("Players")
+        	    local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local player = Players.LocalPlayer
     local cam = workspace.CurrentCamera
     
-            getgenv().timer=false
+        	getgenv().timer=false
     local UIS = game:GetService("UserInputService")
     local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
 
@@ -1000,11 +954,7 @@ local bondCount = player.PlayerGui.BondGui.BondInfo.BondCount
 
     workspace.DescendantAdded:Connect(setupPrompt)
     else
-   local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-
-local humanoid = char:WaitForChild("Humanoid")
-humanoid.Health = 0
+        game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
     end
     end)
 end
@@ -1289,8 +1239,8 @@ repeat
 until crate ~= nil
 
 print("Crate найден:", crate)
-        if getgenv().auto_win2 then
-                                line1, animatedText, timeText = createCustomGui(
+		if getgenv().auto_win2 then
+			                    line1, animatedText, timeText = createCustomGui(
         "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds & win farm",
         true,
         "dev - govorgub",
@@ -1300,7 +1250,7 @@ print("Crate найден:", crate)
     )
 
 
-        else
+		else
                     line1, animatedText, timeText = createCustomGui(
         "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds farm",
         false,
@@ -1375,18 +1325,16 @@ end
 local script_to_queue = string.format([[
     getgenv().auto_bond = %s
     getgenv().auto_win = %s
-    getgenv().auto_win2 = %s
+	getgenv().auto_win2 = %s
     getgenv().party_mode = %s
-    getgenv().webhookUrl = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
     
 ]], 
     tostring(auto_bond),
     tostring(auto_win),
-    tostring(auto_win2),
+	tostring(auto_win2),
     party_mode and string.format("%q", party_mode) or "nil",
-    webhookUrl and string.format("%q", webhookUrl) or "nil",
     tostring(auto_bond),
     tostring(auto_win),
     party_mode and string.format("%q", party_mode) or "nil"
