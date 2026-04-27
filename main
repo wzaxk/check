@@ -1,5 +1,5 @@
 
---13
+--1338
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -27,6 +27,7 @@ local player = game.Players.LocalPlayer or game.Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+getgenv().kolvobond = 0
 
 
 local function createCustomGui(message1, showMessage3, ...)
@@ -786,14 +787,15 @@ end)
     local function scanBond()
         local objectModels = workspace:WaitForChild("ObjectModels")
 
-        for _, obj in ipairs(objectModels:GetChildren()) do
-            if obj.Name == "bond" then
-                local id = obj:GetAttribute("serverEntity")
-                if id then
-                    remote:FireServer(id)
-                end
-            end
+       for _, obj in ipairs(objectModels:GetChildren()) do
+    if obj.Name == "bond" then
+        local id = obj:GetAttribute("serverEntity")
+        if id then
+            getgenv().kolvobond += 1 
+            remote:FireServer(id)
         end
+    end
+	end
     end
 
     local function handleBanks()
@@ -822,7 +824,64 @@ end)
 
         local elapsed = math.floor(tick() - startTime)
         print("ended in " .. elapsed .. " seconds")
+        if getgenv().webhookUrl ~= nil then
+			local Players = game:GetService("Players")
+			local HttpService = game:GetService("HttpService")
 
+			local player = Players.LocalPlayer
+			local userId = player.UserId
+
+			local response = game:HttpGet(
+			    "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="
+			    .. userId ..
+			    "&size=420x420&format=Png&isCircular=false"
+			)
+
+			local decoded = HttpService:JSONDecode(response)
+			local thumbUrl = decoded.data[1].imageUrl
+
+			setclipboard(thumbUrl)
+			local data = {
+			    ["username"] = "Moondiety Log",
+			    ["avatar_url"] = "https://images-ext-1.discordapp.net/external/bCL2bmCy5myVCFPUgCWuMRidBoNsqZHo1otg2kjRIx8/https/cdn.discordapp.com/icons/1369029597684957295/a_7c05b16000d7f86e970b33e342d68a1b.gif",
+
+			    ["embeds"] = {{
+			        ["title"] = "Script Finished",
+									local clocks = {
+						"🕐","🕑","🕒","🕓","🕔","🕕",
+						"🕖","🕗","🕘","🕙","🕚","🕛"
+					}
+
+					local randomClock = clocks[math.random(1, #clocks)]
+
+					["description"] = "```" .. string.format(
+						"%s (%s)\n💵 Collected bonds: %s\n%s Ended in %s seconds",
+						player.Name,
+						player.DisplayName,
+						tostring(getgenv().kolvobond),
+						randomClock,
+						tostring(elapsed)
+					) .. "```",
+			        ["color"] = 0x2ecc71,
+
+			        ["thumbnail"] = {
+			            ["url"] = thumbUrl 
+			        }
+			    }}
+			}
+
+			local requestFunc = http_request or request or (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request)
+
+			if requestFunc then
+			    requestFunc({
+			        Url = getgenv().webhookUrl,
+			        Body = HttpService:JSONEncode(data),
+			        Method = "POST",
+			        Headers = {["content-type"] = "application/json"}
+			    })
+			end
+
+        end
         if getgenv().auto_win2 then
         	    local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
@@ -1321,6 +1380,7 @@ local script_to_queue = string.format([[
     tostring(auto_win),
 	tostring(auto_win2),
     party_mode and string.format("%q", party_mode) or "nil",
+    webhookUrl and string.format("%q", webhookUrl) or "nil",
     tostring(auto_bond),
     tostring(auto_win),
     party_mode and string.format("%q", party_mode) or "nil"
