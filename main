@@ -1,5 +1,5 @@
 
---1338
+--1336
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -839,6 +839,12 @@ end)
 
 			local decoded = HttpService:JSONDecode(response)
 			local thumbUrl = decoded.data[1].imageUrl
+							local clocks = {
+						"🕐","🕑","🕒","🕓","🕔","🕕",
+						"🕖","🕗","🕘","🕙","🕚","🕛"
+					}
+					
+					local randomClock = clocks[math.random(1, #clocks)]
 
 			setclipboard(thumbUrl)
 			local data = {
@@ -847,12 +853,7 @@ end)
 
 			    ["embeds"] = {{
 			        ["title"] = "Script Finished",
-									local clocks = {
-						"🕐","🕑","🕒","🕓","🕔","🕕",
-						"🕖","🕗","🕘","🕙","🕚","🕛"
-					}
-
-					local randomClock = clocks[math.random(1, #clocks)]
+					
 
 					["description"] = "```" .. string.format(
 						"%s (%s)\n💵 Collected bonds: %s\n%s Ended in %s seconds",
