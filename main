@@ -1,5 +1,5 @@
 
---1
+--1337
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -794,7 +794,7 @@ end)
             getgenv().kolvobond += 1 
     
             remote:FireServer(id)
-            task.wait(.2)
+            task.wait(.1)
         end
     end
     end
