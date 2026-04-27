@@ -1,5 +1,5 @@
 
---1338
+--13
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -705,9 +705,11 @@ task.spawn(function()
             end
 
             if t >= 15 then
-                        local player = game.Players.LocalPlayer
-		local char = player.Character or player.CharacterAdded:Wait()
-		char:BreakJoints()
+                     local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+
+local humanoid = char:WaitForChild("Humanoid")
+humanoid.Health = 0
                 break
             end
 
@@ -934,9 +936,11 @@ end)
 
     workspace.DescendantAdded:Connect(setupPrompt)
     else
-        local player = game.Players.LocalPlayer
-		local char = player.Character or player.CharacterAdded:Wait()
-		char:BreakJoints()
+   local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+
+local humanoid = char:WaitForChild("Humanoid")
+humanoid.Health = 0
     end
     end)
 end
