@@ -1,5 +1,5 @@
 
---1336
+--13355
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -1373,6 +1373,7 @@ local script_to_queue = string.format([[
     getgenv().auto_win = %s
 	getgenv().auto_win2 = %s
     getgenv().party_mode = %s
+	getgenv().webhookUrl = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
     
