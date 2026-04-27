@@ -792,7 +792,9 @@ end)
         local id = obj:GetAttribute("serverEntity")
         if id then
             getgenv().kolvobond += 1 
+	
             remote:FireServer(id)
+			task.wait(.2)
         end
     end
 	end
