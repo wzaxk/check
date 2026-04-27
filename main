@@ -1,5 +1,5 @@
 
---1339
+--1338
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -711,11 +711,8 @@ task.spawn(function()
                 break
             end
 
-            if totalTime >= 50 then
-          
-        local player = game.Players.LocalPlayer
-		local char = player.Character or player.CharacterAdded:Wait()
-		char:BreakJoints()
+            if totalTime >= 120 then
+           game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
                 break
             end
         end
