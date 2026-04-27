@@ -1,5 +1,5 @@
 
---13399
+--13
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -724,7 +724,7 @@ task.spawn(function()
                 break
             end
 
-            if totalTime >= 10 then
+            if totalTime >= 50 then
                 local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
                 local remote = remotes:FindFirstChild("ReturnToLooby")
 
