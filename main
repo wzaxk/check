@@ -1,5 +1,5 @@
 
---13
+--1362
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -315,25 +315,25 @@ end)
                 if zone then
 
                     teleportToTop(zone.PrimaryPart)
-					currentZone = zone
+                    currentZone = zone
                     zoneLocked = true
-					
+                    
                     task.spawn(function()
-						while task.wait(1) do
-							local label = getStatusLabel(currentZone)
-							if label and label.Text == "Creating Party" then
-							local args = {
-										{
-											isPrivate = getgenv().isPrivate or true,
-											maxMembers = getgenv().party_members or 1,
-											trainId = "default",
-											gameMode = getgenv().party_mode or "Normal"
-										}
-									}
-									ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
-								print('attempt')
-							end
-						end
+                        while task.wait(1) do
+                            local label = getStatusLabel(currentZone)
+                            if label and label.Text == "Creating Party" then
+                            local args = {
+                                        {
+                                            isPrivate = getgenv().isPrivate or true,
+                                            maxMembers = getgenv().party_members or 1,
+                                            trainId = "default",
+                                            gameMode = getgenv().party_mode or "Normal"
+                                        }
+                                    }
+                                    ReplicatedStorage.Shared.Universe.Network.RemoteEvent.CreateParty:FireServer(unpack(args))
+                                print('attempt')
+                            end
+                        end
                         walkAroundPosition(zone.PrimaryPart.CFrame, 3, 10, 0.015)
                     end)
 
@@ -842,13 +842,13 @@ end)
         print("ended in " .. elapsed .. " seconds")
 
         if getgenv().auto_win2 then
-        	    local Players = game:GetService("Players")
+                local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local player = Players.LocalPlayer
     local cam = workspace.CurrentCamera
     
-        	getgenv().timer=false
+            getgenv().timer=false
     local UIS = game:GetService("UserInputService")
     local remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
 
@@ -1239,8 +1239,8 @@ repeat
 until crate ~= nil
 
 print("Crate найден:", crate)
-		if getgenv().auto_win2 then
-			                    line1, animatedText, timeText = createCustomGui(
+        if getgenv().auto_win2 then
+                                line1, animatedText, timeText = createCustomGui(
         "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds & win farm",
         true,
         "dev - govorgub",
@@ -1250,7 +1250,7 @@ print("Crate найден:", crate)
     )
 
 
-		else
+        else
                     line1, animatedText, timeText = createCustomGui(
         "<font color='rgb(255,0,0)'>Moondiety </font>Auto bonds farm",
         false,
@@ -1325,7 +1325,7 @@ end
 local script_to_queue = string.format([[
     getgenv().auto_bond = %s
     getgenv().auto_win = %s
-	getgenv().auto_win2 = %s
+    getgenv().auto_win2 = %s
     getgenv().party_mode = %s
 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wzaxk/check/refs/heads/main/main"))()
@@ -1333,11 +1333,11 @@ local script_to_queue = string.format([[
 ]], 
     tostring(auto_bond),
     tostring(auto_win),
-	tostring(auto_win2),
+    tostring(auto_win2),
     party_mode and string.format("%q", party_mode) or "nil",
     tostring(auto_bond),
     tostring(auto_win),
     party_mode and string.format("%q", party_mode) or "nil"
 )
 
-queue_on_teleport(script_to_queue)
+--queue_on_teleport(script_to_queue)
