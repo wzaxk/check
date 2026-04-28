@@ -1,5 +1,5 @@
 
---1362
+--13621
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -32,7 +32,7 @@ task.spawn(function()
         if character then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid and humanoid.Health <= 0 then
-                game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+                game:GetService("TeleportService"):Teleport(116495829188952)
                 break
             end
         end
@@ -725,12 +725,7 @@ task.spawn(function()
             end
 
             if totalTime >= 50 then
-                local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
-                local remote = remotes:FindFirstChild("ReturnToLooby")
-
-                if remote then
-                    remote:FireServer()
-                end
+                game:GetService("TeleportService"):Teleport(116495829188952)
 
                 break
             end
@@ -954,7 +949,7 @@ end)
 
     workspace.DescendantAdded:Connect(setupPrompt)
     else
-        game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
+        game:GetService("TeleportService"):Teleport(116495829188952)
     end
     end)
 end
@@ -1340,4 +1335,4 @@ local script_to_queue = string.format([[
     party_mode and string.format("%q", party_mode) or "nil"
 )
 
---queue_on_teleport(script_to_queue)
+queue_on_teleport(script_to_queue)
