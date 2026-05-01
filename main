@@ -1,5 +1,5 @@
 
---1362
+--13625
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -948,7 +948,7 @@ end)
 
     workspace.DescendantAdded:Connect(setupPrompt)
     else
-        game:GetService("TeleportService"):Teleport(116495829188952)
+        --game:GetService("TeleportService"):Teleport(116495829188952)
     end
     end)
 end
