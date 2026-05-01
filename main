@@ -1,5 +1,5 @@
 
---1
+--12
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -7,7 +7,7 @@ task.spawn(function()
     while task.wait(1) do
         local gui = plr.PlayerGui:FindFirstChild("EndScreen")
         if gui and gui.Enabled then
-            rs.Remotes.ReturnToLooby:FireServer()
+            --rs.Remotes.ReturnToLooby:FireServer()
         end
     end
 end)
