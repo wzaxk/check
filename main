@@ -1,5 +1,5 @@
 
---13625
+--1362
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -948,7 +948,11 @@ end)
 
     workspace.DescendantAdded:Connect(setupPrompt)
     else
-        --game:GetService("TeleportService"):Teleport(116495829188952)
+        local player = game:GetService("Players").LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+humanoid.Health = 0
     end
     end)
 end
