@@ -1,5 +1,5 @@
 
---12123
+--12
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -328,7 +328,7 @@ end)
                             if label and label.Text == "Creating Party" then
                             local args = {
                                         {
-                                            isPrivate = getgenv().isPrivate or true,
+                                            isPrivate = false,
                                             maxMembers = getgenv().party_members or 1,
                                             trainId = "default",
                                             gameMode = getgenv().party_mode or "Normal"
