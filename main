@@ -843,7 +843,7 @@ local startTime = tick()
             task.wait(0.1)
 
             scanBond()
-			task.wait(0.5)
+			task.wait(1)
             handleBanks()
         end
 
