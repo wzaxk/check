@@ -1,5 +1,5 @@
-getgenv().auto_bond=true
---1337
+
+--1338
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
