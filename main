@@ -1,5 +1,5 @@
 
---12
+--1337
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -7,11 +7,8 @@ task.spawn(function()
     while task.wait(1) do
         local gui = plr.PlayerGui:FindFirstChild("EndScreen")
         if gui and gui.Enabled then
-            wait(3)
-             local args = {
-    false
-}
-game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("EndDecision"):FireServer(unpack(args))
+           
+              game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
         end
     end
 end)
@@ -36,7 +33,7 @@ task.spawn(function()
         if character then
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid and humanoid.Health <= 0 then
-                --game:GetService("TeleportService"):Teleport(116495829188952)
+                 game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
                 break
             end
         end
@@ -724,120 +721,163 @@ task.spawn(function()
             end
 
             if afkTime >= 15 then
-                humanoid.Health = 0
+                game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
                 break
             end
 
             if totalTime >= 50 then
-                humanoid.Health = 0
+                 game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
                 break
             end
         end
     end
 end)
 
-    local startTime = tick()
-      local player = game.Players.LocalPlayer
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    local startPos = hrp.CFrame + Vector3.new(0, 3, 0)
+local startTime = tick()
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+local startPos = hrp.CFrame + Vector3.new(0, 3, 0)
 
-    if not flyActive then
-        openFly()
+if not flyActive then
+    openFly()
+end
+
+while not (state.horseMounted and FLYING) do
+    task.wait(0.2)
+end
+
+hrp.CFrame = startPos
+task.wait(0.6)
+
+local points = {
+    CFrame.new(-640.667908, 35.0571709, 21950.3281),
+    CFrame.new(-115.775627, 49.8778229, 14062.6631),
+    CFrame.new(-168.12912, 80.0000534, 6071.42822),
+    CFrame.new(-533.117676, 36.3435669, -1781.96985),
+    CFrame.new(354.946167, 27.1051216, -8348.29395),
+    CFrame.new(94.0902328, 32.3177567, -17690.3359),
+    CFrame.new(-642.358032, 42.1449623, -25633.4668),
+    CFrame.new(212.387421, 56.2233772, -33732.6641),
+    CFrame.new(-196.918488, 48.4707794, -48867.3633),
+    CFrame.new(-50.918488, 48.4707794, -48867.3633)
+}
+
+local remote = game:GetService("ReplicatedStorage")
+    :WaitForChild("Shared")
+    :WaitForChild("Universe")
+    :WaitForChild("Network")
+    :WaitForChild("RemoteEvent")
+    :WaitForChild("Actionable")
+
+local visitedBanks = {}
+
+local function getBanks()
+    local banks = {}
+    local function scan(parent)
+        for _, v in ipairs(parent:GetChildren()) do
+            if v.Name == "Bank" or v.Name == "BankDestroyed" then
+                table.insert(banks, v)
+            end
+            scan(v)
+        end
     end
+    scan(workspace)
+    return banks
+end
 
-    while not (state.horseMounted and FLYING) do
+local function getBankCFrame(bank)
+    if bank:IsA("Model") then
+        return (bank.PrimaryPart and bank.PrimaryPart.CFrame or bank:GetPivot()) * CFrame.new(0, 30, 0)
+    elseif bank:IsA("BasePart") then
+        return CFrame.new(bank.Position + Vector3.new(0, 30, 0))
+    end
+end
+
+local function collectBonds(quickMode)
+    local objectModels = workspace:FindFirstChild("ObjectModels")
+    if not objectModels then return 0 end
+    
+    local bonds = {}
+    for _, obj in ipairs(objectModels:GetChildren()) do
+        if obj.Name == "bond" then
+            table.insert(bonds, obj)
+        end
+    end
+    
+    if #bonds == 0 then
+        if quickMode then
+            return 0
+        else
+            -- Если нет бондов, ждём немного времени для их появления
+            for i = 1, 4 do -- 0.8 секунды всего
+                task.wait(0.2)
+                for _, obj in ipairs(objectModels:GetChildren()) do
+                    if obj.Name == "bond" then
+                        table.insert(bonds, obj)
+                    end
+                end
+                if #bonds > 0 then break end
+            end
+        end
+    end
+    
+    local collected = 0
+    for _, bond in ipairs(bonds) do
+        local id = bond:GetAttribute("serverEntity")
+        if id then
+            remote:FireServer(id)
+            collected = collected + 1
+            task.wait(0.05)
+        end
+    end
+    
+    if collected > 0 then
         task.wait(0.2)
     end
+    
+    return collected
+end
 
-    hrp.CFrame = startPos
-    task.wait(0.6)
-
-    local points = {
-        CFrame.new(-640.667908, 35.0571709, 21950.3281),
-        CFrame.new(-115.775627, 49.8778229, 14062.6631),
-        CFrame.new(-168.12912, 80.0000534, 6071.42822),
-        CFrame.new(-533.117676, 36.3435669, -1781.96985),
-        CFrame.new(354.946167, 27.1051216, -8348.29395),
-        CFrame.new(94.0902328, 32.3177567, -17690.3359),
-        CFrame.new(-642.358032, 42.1449623, -25633.4668),
-        CFrame.new(212.387421, 56.2233772, -33732.6641),
-        CFrame.new(-196.918488, 48.4707794, -48867.3633),
-        CFrame.new(-50.918488, 48.4707794, -48867.3633)
-    }
-
-    local remote = game:GetService("ReplicatedStorage")
-        :WaitForChild("Shared")
-        :WaitForChild("Universe")
-        :WaitForChild("Network")
-        :WaitForChild("RemoteEvent")
-        :WaitForChild("Actionable")
-
-    local visitedBanks = {}
-
-    local function getBanks()
-        local banks = {}
-
-        local function scan(parent)
-            for _, v in ipairs(parent:GetChildren()) do
-                if v.Name == "Bank" or v.Name == "BankDestroyed" then
-                    table.insert(banks, v)
-                end
-                scan(v)
-            end
-        end
-
-        scan(workspace)
-        return banks
-    end
-
-    local function getBankCFrame(bank)
-        if bank:IsA("Model") then
-            return (bank.PrimaryPart and bank.PrimaryPart.CFrame or bank:GetPivot()) * CFrame.new(0, 30, 0)
-        elseif bank:IsA("BasePart") then
-            return CFrame.new(bank.Position + Vector3.new(0, 30, 0))
+local function handleBanks()
+    local banks = getBanks()
+    local hasBanks = false
+    
+    for _, bank in ipairs(banks) do
+        if not visitedBanks[bank] then
+            hasBanks = true
+            visitedBanks[bank] = true
+            
+            hrp.CFrame = getBankCFrame(bank)
+            task.wait(0.2)
+            
+            collectBonds(true) 
         end
     end
+    
+    return hasBanks
+end
 
-    local function scanBond()
-        local objectModels = workspace:WaitForChild("ObjectModels")
-
-        for _, obj in ipairs(objectModels:GetChildren()) do
-            if obj.Name == "bond" then
-                local id = obj:GetAttribute("serverEntity")
-                if id then
-                    remote:FireServer(id)
-                end
-            end
+task.spawn(function()
+    for index, point in ipairs(points) do
+        hrp.CFrame = point
+        task.wait(0.2) 
+        
+        local bondsCollected = collectBonds(true)
+        
+        local hadBanks = handleBanks()
+        
+        if bondsCollected == 0 and not hadBanks then
+            task.wait(0.3) 
+            collectBonds(false)
         end
+        
+        collectBonds(true)
     end
+    
+    local elapsed = math.floor(tick() - startTime)
+    print("ended in " .. elapsed .. " seconds")
 
-    local function handleBanks()
-        local banks = getBanks()
-
-        for _, bank in ipairs(banks) do
-            if not visitedBanks[bank] then
-                hrp.CFrame = getBankCFrame(bank)
-                visitedBanks[bank] = true
-                task.wait(0.3)
-
-                scanBond()
-                task.wait(0.5)
-            end
-        end
-    end
-
-    task.spawn(function()
-        for _, point in ipairs(points) do
-            hrp.CFrame = point
-            task.wait(0.5)
-
-            scanBond()
-            handleBanks()
-        end
-
-        local elapsed = math.floor(tick() - startTime)
-        print("ended in " .. elapsed .. " seconds")
 
         if getgenv().auto_win2 then
                 local Players = game:GetService("Players")
@@ -952,11 +992,7 @@ end)
 
     workspace.DescendantAdded:Connect(setupPrompt)
     else
-        local player = game:GetService("Players").LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-
-humanoid.Health = 0
+         game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
     end
     end)
 end
