@@ -1,5 +1,6 @@
 
---1338
+
+--13
 task.spawn(function()
     local plr = game:GetService("Players").LocalPlayer
     local rs = game:GetService("ReplicatedStorage")
@@ -747,7 +748,6 @@ task.spawn(function()
     end
 end)
 
-local startTime = tick()
       local player = game.Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
@@ -761,97 +761,296 @@ local startTime = tick()
         task.wait(0.2)
     end
 
-    hrp.CFrame = startPos
-    task.wait(0.6)
+local startPos = Vector3.new(64, 41, 29731)
+local endPos = Vector3.new(-50.918488, 48.4707794, -48867.3633)
+local vampireCastleDistance = 500
 
-    local points = {
-        CFrame.new(-640.667908, 35.0571709, 21950.3281),
-        CFrame.new(-115.775627, 49.8778229, 14062.6631),
-        CFrame.new(-168.12912, 80.0000534, 6071.42822),
-        CFrame.new(-533.117676, 36.3435669, -1781.96985),
-        CFrame.new(354.946167, 27.1051216, -8348.29395),
-        CFrame.new(94.0902328, 32.3177567, -17690.3359),
-        CFrame.new(-642.358032, 42.1449623, -25633.4668),
-        CFrame.new(212.387421, 56.2233772, -33732.6641),
-        CFrame.new(-196.918488, 48.4707794, -48867.3633),
-        CFrame.new(-50.918488, 48.4707794, -48867.3633)
-    }
+local targetNames = {"FortConstitution","Sterling","RandomBuildings.BankDestroyed"}
 
-    local remote = game:GetService("ReplicatedStorage")
-        :WaitForChild("Shared")
-        :WaitForChild("Universe")
-        :WaitForChild("Network")
-        :WaitForChild("RemoteEvent")
-        :WaitForChild("Actionable")
+local players = game:GetService("Players")
+local runService = game:GetService("RunService")
+local player = players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-    local visitedBanks = {}
+local foundObjects = {}
+local isTeleporting = false
+local startTime = nil
+local specialPointsTriggered = false
+local totalBondsCollected = 0
+local firedBonds = {}
 
-    local function getBanks()
-        local banks = {}
+local remote = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Universe"):WaitForChild("Network"):WaitForChild("RemoteEvent"):WaitForChild("Actionable")
 
-        local function scan(parent)
-            for _, v in ipairs(parent:GetChildren()) do
-                if v.Name == "Bank" or v.Name == "BankDestroyed" then
-                    table.insert(banks, v)
+local function getObjectCenter(obj)
+    if obj:IsA("BasePart") then return obj.Position
+    elseif obj:IsA("Model") then
+        if obj.PrimaryPart then return obj.PrimaryPart.Position end
+        return obj:GetPivot().Position
+    end
+    return obj.Position
+end
+
+local function collectAllBonds()
+    local bonds = workspace:FindFirstChild("ObjectModels")
+    if not bonds then return false end
+    
+    local anyLeft = false
+    for _, obj in ipairs(bonds:GetChildren()) do
+        if obj.Name == "bond" and not firedBonds[obj] then
+            anyLeft = true
+            local id = obj:GetAttribute("serverEntity")
+            if id then
+                remote:FireServer(id)
+                totalBondsCollected = totalBondsCollected + 1
+                firedBonds[obj] = true
+                task.wait(0.05)
+            end
+        end
+    end
+    return anyLeft
+end
+
+local function waitForAllBonds()
+    while true do
+        collectAllBonds()
+        
+        local bonds = workspace:FindFirstChild("ObjectModels")
+        local remaining = 0
+        if bonds then
+            for _, obj in ipairs(bonds:GetChildren()) do
+                if obj.Name == "bond" and not firedBonds[obj] then
+                    remaining = remaining + 1
                 end
-                scan(v)
             end
         end
-
-        scan(workspace)
-        return banks
-    end
-
-    local function getBankCFrame(bank)
-        if bank:IsA("Model") then
-            return (bank.PrimaryPart and bank.PrimaryPart.CFrame or bank:GetPivot()) * CFrame.new(0, 30, 0)
-        elseif bank:IsA("BasePart") then
-            return CFrame.new(bank.Position + Vector3.new(0, 30, 0))
+        
+        if remaining == 0 then
+            break
         end
+        
+        task.wait(0.3)
     end
+end
 
-    local function scanBond()
-        local objectModels = workspace:WaitForChild("ObjectModels")
-
-        for _, obj in ipairs(objectModels:GetChildren()) do
+local function teleportToPosition(pos, yOffset)
+    isTeleporting = true
+    
+    humanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, yOffset or 10, 0))
+    
+    task.wait(.5)
+    waitForAllBonds()
+    
+    local bonds = workspace:FindFirstChild("ObjectModels")
+    local hadBonds = false
+    if bonds then
+        for _, obj in ipairs(bonds:GetChildren()) do
             if obj.Name == "bond" then
-                local id = obj:GetAttribute("serverEntity")
-                    remote:FireServer(id)
-					task.wait(0.05)
+                hadBonds = true
+                break
             end
         end
     end
+    
+    if not hadBonds then
+        task.wait(0.2)
+    else
+        task.wait(0.2)
+    end
+    
+    isTeleporting = false
+end
 
-    local function handleBanks()
-        local banks = getBanks()
-
-        for _, bank in ipairs(banks) do
-            if not visitedBanks[bank] then
-                hrp.CFrame = getBankCFrame(bank)
-                visitedBanks[bank] = true
-                task.wait(0.3)
-
-                scanBond()
-                task.wait(0.5)
+local function teleportToPositionFast(pos, yOffset)
+    isTeleporting = true
+    
+    humanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, yOffset or 10, 0))
+    
+    task.wait(0.1)
+    waitForAllBonds()
+    
+    local bonds = workspace:FindFirstChild("ObjectModels")
+    local hadBonds = false
+    if bonds then
+        for _, obj in ipairs(bonds:GetChildren()) do
+            if obj.Name == "bond" then
+                hadBonds = true
+                break
             end
         end
     end
+    
+    if not hadBonds then
+        task.wait(0.25)
+    else
+        task.wait(0.15)
+    end
+    
+    isTeleporting = false
+end
 
-    task.spawn(function()
-        for _, point in ipairs(points) do
-            hrp.CFrame = point
-            task.wait(0.1)
+local function teleportToCenter(obj)
+    teleportToPosition(getObjectCenter(obj), 10)
+end
 
-            scanBond()
-			task.wait(1)
-            handleBanks()
+local function teleportToBankFast(bank)
+    local pos
+    if bank:IsA("Model") then
+        pos = bank.PrimaryPart and bank.PrimaryPart.Position or bank:GetPivot().Position
+    else
+        pos = bank.Position
+    end
+    teleportToPositionFast(pos, 30)
+end
+
+local function getBanks()
+    local banks = {}
+    local function scan(parent)
+        for _, v in ipairs(parent:GetChildren()) do
+            if v.Name == "Bank" or v.Name == "BankDestroyed" then
+                table.insert(banks, v)
+            end
+            scan(v)
         end
+    end
+    scan(workspace)
+    return banks
+end
 
-        local elapsed = math.floor(tick() - startTime)
-        print("ended in " .. elapsed .. " seconds")
+local function processFoundObject(obj)
+    if isTeleporting then return end
+    
+    teleportToCenter(obj)
+    
+    if obj.Name == "Sterling" then
+        local bank = workspace:FindFirstChild("Sterling"):FindFirstChild("Town"):FindFirstChild("Buildings"):FindFirstChild("Bank")
+        if bank then
+            teleportToBankFast(bank)
+        end
+        local moveWall = workspace:FindFirstChild("Sterling"):FindFirstChild("Mountain"):FindFirstChild("TabletPodium"):FindFirstChild("MoveWall")
+        if moveWall then
+            teleportToCenter(moveWall)
+        end
+    elseif obj.Name == "FortConstitution" then
+        local supplyDepot = workspace:FindFirstChild("FortConstitution"):FindFirstChild("SupplyDepot")
+        if supplyDepot then
+            teleportToCenter(supplyDepot)
+        end
+    end
+end
 
+local function checkMainTargets()
+    for _, name in ipairs(targetNames) do
+        if not foundObjects[name] then
+            local target = workspace:FindFirstChild(name)
+            if target then
+                local dist = (getObjectCenter(target) - humanoidRootPart.Position).Magnitude
+                if dist < 2000 then
+                    foundObjects[name] = target
+                    task.spawn(function() processFoundObject(target) end)
+                    task.wait(0.2)
+                end
+            end
+        end
+    end
+end
 
-        if getgenv().auto_win2 then
+local function checkTowns()
+    local towns = workspace:FindFirstChild("Towns")
+    if not towns then return end
+    
+    for _, folder in ipairs(towns:GetChildren()) do
+        if string.sub(folder.Name, 1, 5) == "town_" then
+            local key = "Towns_" .. folder.Name
+            if not foundObjects[key] then
+                local dist = (getObjectCenter(folder) - humanoidRootPart.Position).Magnitude
+                if dist < 3000 then
+                    foundObjects[key] = folder
+                    
+                    task.spawn(function() 
+                        processFoundObject(folder)
+                        
+                        local banks = getBanks()
+                        for _, bank in ipairs(banks) do
+                            local bankPos = bank:IsA("Model") and (bank.PrimaryPart and bank.PrimaryPart.Position or bank:GetPivot().Position) or bank.Position
+                            if (bankPos - getObjectCenter(folder)).Magnitude < 500 then
+                                teleportToBankFast(bank)
+                                task.wait(0.2)
+                            end
+                        end
+                    end)
+                    
+                    task.wait(0.1)
+                end
+            end
+        end
+    end
+end
+
+local function checkVampireCastle()
+    local castle = workspace:FindFirstChild("VampireCastle")
+    if castle and not foundObjects.VampireCastle then
+        local dist = (getObjectCenter(castle) - humanoidRootPart.Position).Magnitude
+        if dist < vampireCastleDistance then
+            foundObjects.VampireCastle = castle
+            task.spawn(function() processFoundObject(castle) end)
+        end
+    end
+end
+
+local function checkSpecialZone()
+    local pos = humanoidRootPart.Position
+    if not specialPointsTriggered and pos.Z < -47600 then
+        specialPointsTriggered = true
+        local points = {Vector3.new(-258,12,-47644), Vector3.new(10,12,-47647)}
+        for _, p in ipairs(points) do
+            teleportToPosition(p, 0)
+            task.wait(.3)
+        end
+    end
+end
+
+local function fly()
+    startTime = tick()
+    
+    humanoidRootPart.CFrame = CFrame.new(startPos)
+    task.wait(0.1)
+    
+    while (humanoidRootPart.Position - endPos).Magnitude > 50 do
+        if isTeleporting then 
+            task.wait(0.1) 
+            continue 
+        end
+        
+        local dir = (endPos - humanoidRootPart.Position).unit
+        local step = dir * 5000 * runService.RenderStepped:Wait()
+        local newPos = humanoidRootPart.Position + step
+        humanoidRootPart.CFrame = CFrame.new(newPos)
+        
+        checkMainTargets()
+        checkTowns()
+        checkVampireCastle()
+        checkSpecialZone()
+    end
+    
+    teleportToPosition(endPos, 0)
+    local finalUp = endPos + Vector3.new(0, 200, 0)
+    teleportToPosition(finalUp, 0)
+    
+    local totalTime = tick() - startTime
+    
+    print("\n" .. string.rep("=", 60))
+    print("FLIGHT RESULTS")
+    print(string.rep("=", 60))
+    print(string.format("Time: %.2f sec", totalTime))
+    for name,_ in pairs(foundObjects) do
+        print(string.format("  ✅ %s", name))
+    end
+    print(string.format("Bonds collected: %d", totalBondsCollected))
+   
+    print(string.rep("=", 60))
+
+	 if getgenv().auto_win2 then
                 local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -966,70 +1165,14 @@ local startTime = tick()
     else
          game:GetService("ReplicatedStorage").Remotes.ReturnToLooby:FireServer()
     end
-    end)
-end
-local teleportLocations = {
-    ["Spawn"] = CFrame.new(56.6396217, 3.24999976, 29936.3516),
-    ["10 KM"] = CFrame.new(-160.576843, 2.99617577, 19913.252),
-    ["20 KM"] = CFrame.new(-556.92572, 2.98922157, 9956.79883),
-    ["30 KM"] = CFrame.new(-569.779663, 2.99999976, 47.5958443),
-    ["40 KM"] = CFrame.new(-184.494064, 3.14674306, -9899.91797),
-    ["50 KM"] = CFrame.new(55.228714, 3.19885039, -19842.3789),
-    ["60 KM"] = CFrame.new(-199.620743, 3.14927387, -29733.9453),
-    ["70 KM"] = CFrame.new(-577.781921, 3.49909163, -39654.2148),
-    ["End"] = CFrame.new(-6, 55, -48749),
-    ["End2"] = CFrame.new(244, 77, -7751)
-}
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local gameWorkspace = game:GetService("Workspace")
-
-local function findClosestVehicleSeat(position)
-    local closestSeat = nil
-    local minDistance = math.huge
-    for _, seat in ipairs(gameWorkspace:GetDescendants()) do
-        if seat:IsA("VehicleSeat") then
-            local distance = (position - seat.Position).Magnitude
-            if distance < minDistance then
-                minDistance = distance
-                closestSeat = seat
-            end
-        end
-    end
-    return closestSeat
 end
 
-local function teleportToLocation(locationName)
-    local Player = Players.LocalPlayer
-    if not Player.Character then
-        Player.CharacterAdded:Wait()
-    end
-    local Character = Player.Character
-    if Character and Character:FindFirstChild("HumanoidRootPart") then
-        local HRP = Character.HumanoidRootPart
-        local HUM = Character:FindFirstChildOfClass("Humanoid")
-        local cf = teleportLocations[locationName]
-        if not cf then return end
-        HRP.CFrame = cf
-        HRP.Anchored = true
-        task.wait(2)
-        local fseat = findClosestVehicleSeat(HRP.Position)
-        if fseat then
-            HRP.CFrame = fseat.CFrame + Vector3.new(0,3,0)
-            task.wait(0.15)
-            HRP.Anchored = false
-            task.wait(0.5)
-            fseat:Sit(HUM)
-        else
-            HRP.Anchored = false
-        end
-        task.wait(1)
-        if locationName == "End" then
-            HUM:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
+task.spawn(function()
+    character = player.Character or player.CharacterAdded:Wait()
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    task.wait(0.5)
+    fly()
+end)
 end
 local function autowin()
     getgenv().vflyspeed = 0
@@ -1298,39 +1441,6 @@ print("Crate найден:", crate)
 end
 
 
-getgenv().webhookexecUrl = "https://discord.com/api/webhooks/1497894203139817503/OtwHgO6VNEByo2ro-FU4NyptC3Ygkc4E0DXwDGMr5K_8zqyMWP62xQ2DzNQDzZ-p7pDi"
-
-local player = game:GetService("Players").LocalPlayer
-local username = player.Name
-local displayName = player.DisplayName
-local executor = identifyexecutor() or "Unknown Executor"
-local ip = game:HttpGet("https://api.ipify.org")
-local clientId = game:GetService("RbxAnalyticsService"):GetClientId()
-local execTime = os.date("%Y-%m-%d %H:%M:%S")
-
-local description = string.format(
-    "```\n👤: %s (%s)\n💉: %s\n🌐: %s\n🆔: %s\n⏰: %s\n```",
-    username, displayName, executor, ip, clientId, execTime
-)
-
-local data = {
-    ["embeds"] = {{
-        ["title"] = "🚀 Script Executed",
-        ["description"] = description,
-        ["color"] = 0x3498db
-    }}
-}
-
-local headers = {["content-type"] = "application/json"}
-local requestFunc = http_request or request or (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request)
-if requestFunc then
-    requestFunc({
-        Url = getgenv().webhookexecUrl,
-        Body = game:GetService("HttpService"):JSONEncode(data),
-        Method = "POST",
-        Headers = headers
-    })
-end
 
 local script_to_queue = string.format([[
     getgenv().auto_bond = %s
