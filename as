@@ -1,4 +1,4 @@
-print(8)
+print(15)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -4495,7 +4495,6 @@ function Library.new(selfOrOpts, options)
 
     island.MouseEnter:Connect(function()
         if Library.IslandStyle == "Show on Hover" then
-            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
             setIslandExpanded(true)
         end
     end)
@@ -4516,38 +4515,56 @@ function Library.new(selfOrOpts, options)
             end)
         end
     end)
+    -- ================================================================
+    -- HOVER ФИКС ЧЕРЕЗ HEARTBEAT (работает даже когда UI скрыт)
+    -- ================================================================
+    local islandDragging = false
+    local islandMoved = false
+    local islandDragStart, islandStartPos
+    local hoverTimer = nil
+    local lastHoverState = false
 
     bind(RunService.Heartbeat, function()
-        if not Library.hidden or not island.Visible then return end
-        if Library.IslandStyle ~= "Show on Hover" or islandDragging then return end
+        if not island or not island.Parent then return end
+        if Library.IslandStyle ~= "Show on Hover" then return end
+        if islandDragging then return end
+        if not island.Visible then return end 
         
         local mPos = UserInputService:GetMouseLocation()
         local aPos = island.AbsolutePosition
         local aSize = island.AbsoluteSize
         
-        local isHovering = mPos.X >= aPos.X and mPos.X <= aPos.X + aSize.X and mPos.Y >= aPos.Y and mPos.Y <= aPos.Y + aSize.Y
+        local isHovering = mPos.X >= (aPos.X - 4) and mPos.X <= (aPos.X + aSize.X + 4) 
+                       and mPos.Y >= (aPos.Y - 4) and mPos.Y <= (aPos.Y + aSize.Y + 4)
         
-        if isHovering and not islandExpandedState then
-            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
-            setIslandExpanded(true)
-        elseif not isHovering and islandExpandedState then
-            if not hoverTimer then
+        if isHovering then
+            if hoverTimer then 
+                task.cancel(hoverTimer) 
+                hoverTimer = nil 
+            end
+            if not islandExpandedState then
+                setIslandExpanded(true)
+            end
+            lastHoverState = true
+        else
+            if lastHoverState and not hoverTimer then
                 hoverTimer = task.delay(0.15, function()
+                    hoverTimer = nil
                     local mPos2 = UserInputService:GetMouseLocation()
                     local aPos2 = island.AbsolutePosition
                     local aSize2 = island.AbsoluteSize
-                    if not (mPos2.X >= aPos2.X and mPos2.X <= aPos2.X + aSize2.X and mPos2.Y >= aPos2.Y and mPos2.Y <= aPos2.Y + aSize2.Y) then
+                    local stillHovering = mPos2.X >= (aPos2.X - 4) and mPos2.X <= (aPos2.X + aSize2.X + 4) 
+                                      and mPos2.Y >= (aPos2.Y - 4) and mPos2.Y <= (aPos2.Y + aSize2.Y + 4)
+                    if not stillHovering and islandExpandedState then
                         setIslandExpanded(false)
                     end
-                    hoverTimer = nil
                 end)
+                lastHoverState = false
             end
         end
     end)
+    -- ================================================================
 
-    local islandDragging = false
-    local islandMoved = false
-    local islandDragStart, islandStartPos
     island.InputBegan:Connect(function(input)
         if not Library.IslandDraggable then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -5068,6 +5085,7 @@ function Library.new(selfOrOpts, options)
         Library.enabled = not state
         if not state then
             MainHolder.Visible = true
+            MainHolder.Active = true
             TweenService:Create(mainScale, hideTween, {Scale = Library.UIScale or 1}):Play()
             if nearbyFrame then nearbyFrame.Visible = false end
         else
@@ -5076,6 +5094,7 @@ function Library.new(selfOrOpts, options)
             tw.Completed:Connect(function()
                 if Library.hidden then
                     MainHolder.Visible = false
+                    MainHolder.Active = false
                 end
             end)
         end
