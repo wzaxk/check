@@ -3174,7 +3174,7 @@ function Library.new(selfOrOpts, options)
     local watermark = new("Frame", {
         Name = "Watermark",
         AnchorPoint = Vector2.new(1, 0),
-        Position = UDim2.new(1, -20, 0, 14),
+        Position = UDim2.new(1, -20, 0, 48),
         Size = UDim2.new(0, 0, 0, 28),
         AutomaticSize = Enum.AutomaticSize.X,
         BackgroundColor3 = genv.uicontainer or Color3.fromRGB(18, 19, 24),
@@ -7165,9 +7165,6 @@ function Library.new(selfOrOpts, options)
             if Library.savedFlags and type(Library.savedFlags[cfg.flag]) == "boolean" then
                 obj.state = Library.savedFlags[cfg.flag]
             end
-            if Library.SavedSettings and SystemSettings[cfg.flag] and type(Library.SavedSettings[cfg.flag]) == "boolean" then
-                obj.state = Library.SavedSettings[cfg.flag]
-            end
 
             function obj:UpdateToggle(newState, skipCallback)
                 if newState ~= nil then self.state = newState else self.state = not self.state end
@@ -7216,12 +7213,6 @@ function Library.new(selfOrOpts, options)
             Library.Flags[cfg.flag] = obj.state
             Library:RegisterObject(cfg.flag, obj)
             obj:UpdateToggle(obj.state, true)
-           
-            if SystemSettings[cfg.flag] and obj.callback and Library.SavedSettings and Library.SavedSettings[cfg.flag] ~= nil then
-                task.defer(function()
-                    pcall(obj.callback, obj.state)
-                end)
-            end
             return obj
         end
 
@@ -7247,11 +7238,16 @@ function Library.new(selfOrOpts, options)
             if side ~= "middle" then
                 local layer = side == "right" and stickyLayerRight or stickyLayerLeft
                 local list = side == "right" and stickyRightList or stickyLeftList
+
                 local clone = title:Clone()
                 clone.Position = UDim2.new(0, 0, 0, 0)
+                clone.Size = UDim2.new(1, 0, 0, 15)
+                clone.TextScaled = false
+                clone.TextSize = 13
                 clone.Visible = false
                 clone.ZIndex = 51
                 clone.Parent = layer
+                
                 table.insert(list, {title = title, clone = clone})
             end
         end
@@ -7302,27 +7298,14 @@ function Library.new(selfOrOpts, options)
                     ZIndex = 5,
                 }, Box)
 
-                local savedKey = Library.savedFlags and Library.savedFlags[kbFlag]
-                local initialKey = (type(savedKey) == "string" and savedKey) or defaultKey
-                KeyText.Text = initialKey
-
-                Library.Flags[kbFlag] = initialKey
-                Library:RegisterKeybind(kbFlag, cfg.name or kbFlag, initialKey, function()
+                Library.Flags[kbFlag] = defaultKey
+                Library:RegisterKeybind(kbFlag, cfg.name or kbFlag, defaultKey, function()
                     return obj:GetValue()
                 end, function()
                     obj:UpdateToggle(not obj:GetValue())
                 end, function()
                     obj:UpdateToggle(not obj:GetValue())
                 end)
-
-                Library:RegisterObject(kbFlag, {
-                    GetValue = function() return Library.Flags[kbFlag] end,
-                    SetValue = function(_, v)
-                        Library.Flags[kbFlag] = v
-                        Library:UpdateKeybind(kbFlag, v)
-                        if KeyText and KeyText.Parent then KeyText.Text = tostring(v) end
-                    end,
-                })
 
                 local setting = false
                 bindTap(Box, function()
@@ -7335,7 +7318,6 @@ function Library.new(selfOrOpts, options)
                         if not pressed then return end
                         Library.Flags[kbFlag] = pressed
                         Library:UpdateKeybind(kbFlag, pressed)
-                        Library.save_flags(kbFlag)   
                         KeyText.Text = pressed
                         setting = false
                         conn:Disconnect()
@@ -7980,21 +7962,8 @@ function Library.new(selfOrOpts, options)
                     ZIndex = 5,
                 }, Box)
 
-                local savedKey = Library.savedFlags and Library.savedFlags[kbFlag]
-                local initialKey = (type(savedKey) == "string" and savedKey) or defaultKey
-                KeyText.Text = initialKey
-
-                Library.Flags[kbFlag] = initialKey
-                Library:RegisterKeybind(kbFlag, cfg.name or kbFlag, initialKey, nil, fireButton, fireButton, true)
-
-                Library:RegisterObject(kbFlag, {
-                    GetValue = function() return Library.Flags[kbFlag] end,
-                    SetValue = function(_, v)
-                        Library.Flags[kbFlag] = v
-                        Library:UpdateKeybind(kbFlag, v)
-                        if KeyText and KeyText.Parent then KeyText.Text = tostring(v) end
-                    end,
-                })
+                Library.Flags[kbFlag] = defaultKey
+                Library:RegisterKeybind(kbFlag, cfg.name or kbFlag, defaultKey, nil, fireButton, fireButton, true)
 
                 local setting = false
                 bindTap(Box, function()
@@ -8965,10 +8934,6 @@ function Library.new(selfOrOpts, options)
                 D.selectedOption = Library.ActiveConfig or "None"
             else
                 local saved = Library.savedFlags and Library.savedFlags[cfg.flag]
-            
-                if Library.SavedSettings and SystemSettings[cfg.flag] and Library.SavedSettings[cfg.flag] ~= nil then
-                    saved = Library.SavedSettings[cfg.flag]
-                end
                 if multi then
                     if type(saved) == "table" then D.selectedOptions = saved end
                 else
@@ -8982,12 +8947,6 @@ function Library.new(selfOrOpts, options)
             if cfg.flag then
                 Library.Flags[cfg.flag] = multi and D.selectedOptions or D.selectedOption
                 Library:RegisterObject(cfg.flag, D)
-                if SystemSettings[cfg.flag] and D.callback and Library.SavedSettings and Library.SavedSettings[cfg.flag] ~= nil then
-                    local startVal = multi and D.selectedOptions or D.selectedOption
-                    task.defer(function()
-                        pcall(D.callback, startVal)
-                    end)
-                end
             end
 
             if sideStyle then
