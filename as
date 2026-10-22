@@ -1,4 +1,4 @@
-print(1)
+print(17)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -7080,7 +7080,7 @@ function Library.new(selfOrOpts, options)
         local stickyMerge = makeSticky("StickyMerge", 0.245, 0.74, 49)
         local stickyLeftList, stickyRightList = {}, {}
 
-        local function updateSticky(list, layer)
+               local function updateSticky(list, layer)
             if not itemsSection.Visible or not itemsSection.Parent then
                 layer.Visible = false
                 for _, e in ipairs(list) do e.clone.Visible = false end
@@ -7088,6 +7088,8 @@ function Library.new(selfOrOpts, options)
             end
             local secTop = itemsSection.AbsolutePosition.Y
             local anyStuck = false
+            local activeClone = nil 
+            
             for i, entry in ipairs(list) do
                 local relTop = entry.title.AbsolutePosition.Y - secTop
                 local h = entry.title.AbsoluteSize.Y
@@ -7106,9 +7108,11 @@ function Library.new(selfOrOpts, options)
                         entry.clone.Position = UDim2.new(0, 0, 0, pushY)
                         entry.clone.Visible = true
                         anyStuck = true
+                        activeClone = entry.clone
                     end
                 end
             end
+            
             layer.Visible = anyStuck
         end
 
@@ -7358,14 +7362,24 @@ function Library.new(selfOrOpts, options)
             new("UIPadding", {PaddingLeft = UDim.new(0, 4)}, title)
             registerItem(title, side, 15, cfg.name)
 
-            if side ~= "middle" then
+                       if side ~= "middle" then
                 local layer = side == "right" and stickyLayerRight or stickyLayerLeft
                 local list = side == "right" and stickyRightList or stickyLeftList
                 local clone = title:Clone()
                 clone.Position = UDim2.new(0, 0, 0, 0)
+                clone.Size = UDim2.new(1, 0, 0, 15)
                 clone.Visible = false
                 clone.ZIndex = 51
                 clone.Parent = layer
+                
+                local existingPad = clone:FindFirstChildOfClass("UIPadding")
+                if existingPad then existingPad:Destroy() end
+                new("UIPadding", {PaddingLeft = UDim.new(0, 4)}, clone)
+                
+              
+                clone.TextTruncate = Enum.TextTruncate.None 
+                clone.TextWrapped = false
+                
                 table.insert(list, {title = title, clone = clone})
             end
         end
