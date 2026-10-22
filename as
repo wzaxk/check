@@ -1,4 +1,4 @@
-print(1)
+print(8)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -3206,8 +3206,8 @@ function Library.new(selfOrOpts, options)
 
     local watermark = new("Frame", {
         Name = "Watermark",
-        AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0.5, 0, 0, 14), 
+        AnchorPoint = Vector2.new(1, 0), 
+        Position = UDim2.new(1, 0, 0, 14),
         Size = UDim2.new(0, 0, 0, 32),
         AutomaticSize = Enum.AutomaticSize.X,
         BackgroundColor3 = genv.uicontainer or Color3.fromRGB(18, 19, 24),
@@ -4069,59 +4069,7 @@ function Library.new(selfOrOpts, options)
     local islandStroke = stroke(island, Color3.fromRGB(36, 38, 48), 1, 0.45)
 
 
-     local hoverTimer = nil
-
-    island.MouseEnter:Connect(function()
-        if Library.IslandStyle == "Show on Hover" then
-            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
-            setIslandExpanded(true)
-        end
-    end)
-
-    island.MouseLeave:Connect(function()
-        if Library.IslandStyle == "Show on Hover" and not islandDragging then
-            if hoverTimer then task.cancel(hoverTimer) end
-            hoverTimer = task.delay(0.15, function()
-                if not islandExpandedState or islandDragging then return end
-                local mPos = UserInputService:GetMouseLocation()
-                local aPos = island.AbsolutePosition
-                local aSize = island.AbsoluteSize
-                -- Проверяем, находится ли мышь над островом
-                if mPos.X >= aPos.X and mPos.X <= aPos.X + aSize.X and mPos.Y >= aPos.Y and mPos.Y <= aPos.Y + aSize.Y then
-                    return
-                end
-                setIslandExpanded(false)
-            end)
-        end
-    end)
-
-    bind(RunService.Heartbeat, function()
-        if not Library.hidden or not island.Visible then return end
-        if Library.IslandStyle ~= "Show on Hover" or islandDragging then return end
-        
-        local mPos = UserInputService:GetMouseLocation()
-        local aPos = island.AbsolutePosition
-        local aSize = island.AbsoluteSize
-        
-        local isHovering = mPos.X >= aPos.X and mPos.X <= aPos.X + aSize.X and mPos.Y >= aPos.Y and mPos.Y <= aPos.Y + aSize.Y
-        
-        if isHovering and not islandExpandedState then
-            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
-            setIslandExpanded(true)
-        elseif not isHovering and islandExpandedState then
-            if not hoverTimer then
-                hoverTimer = task.delay(0.15, function()
-                    local mPos2 = UserInputService:GetMouseLocation()
-                    local aPos2 = island.AbsolutePosition
-                    local aSize2 = island.AbsoluteSize
-                    if not (mPos2.X >= aPos2.X and mPos2.X <= aPos2.X + aSize2.X and mPos2.Y >= aPos2.Y and mPos2.Y <= aPos2.Y + aSize2.Y) then
-                        setIslandExpanded(false)
-                    end
-                    hoverTimer = nil
-                end)
-            end
-        end
-    end)
+ 
     local islandScale = new("UIScale", {Scale = 1}, island)
     Library.IslandFrame = island
 
@@ -4460,7 +4408,7 @@ function Library.new(selfOrOpts, options)
         ZIndex = 854,
     }, actTile)
 
-    local islandActiveVal = new("TextLabel", {
+       local islandActiveVal = new("TextLabel", {
         Size = UDim2.new(1, -22, 1, 0),
         BackgroundTransparency = 1,
         FontFace = font(Enum.FontWeight.Medium),
@@ -4543,14 +4491,19 @@ function Library.new(selfOrOpts, options)
 
     Library.SetIslandExpanded = setIslandExpanded
 
+    local hoverTimer = nil
+
     island.MouseEnter:Connect(function()
         if Library.IslandStyle == "Show on Hover" then
+            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
             setIslandExpanded(true)
         end
     end)
+
     island.MouseLeave:Connect(function()
         if Library.IslandStyle == "Show on Hover" and not islandDragging then
-            task.delay(0.08, function()
+            if hoverTimer then task.cancel(hoverTimer) end
+            hoverTimer = task.delay(0.15, function()
                 if not islandExpandedState or islandDragging then return end
                 local mPos = UserInputService:GetMouseLocation()
                 local aPos = island.AbsolutePosition
@@ -4559,7 +4512,36 @@ function Library.new(selfOrOpts, options)
                     return
                 end
                 setIslandExpanded(false)
+                hoverTimer = nil
             end)
+        end
+    end)
+
+    bind(RunService.Heartbeat, function()
+        if not Library.hidden or not island.Visible then return end
+        if Library.IslandStyle ~= "Show on Hover" or islandDragging then return end
+        
+        local mPos = UserInputService:GetMouseLocation()
+        local aPos = island.AbsolutePosition
+        local aSize = island.AbsoluteSize
+        
+        local isHovering = mPos.X >= aPos.X and mPos.X <= aPos.X + aSize.X and mPos.Y >= aPos.Y and mPos.Y <= aPos.Y + aSize.Y
+        
+        if isHovering and not islandExpandedState then
+            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
+            setIslandExpanded(true)
+        elseif not isHovering and islandExpandedState then
+            if not hoverTimer then
+                hoverTimer = task.delay(0.15, function()
+                    local mPos2 = UserInputService:GetMouseLocation()
+                    local aPos2 = island.AbsolutePosition
+                    local aSize2 = island.AbsoluteSize
+                    if not (mPos2.X >= aPos2.X and mPos2.X <= aPos2.X + aSize2.X and mPos2.Y >= aPos2.Y and mPos2.Y <= aPos2.Y + aSize2.Y) then
+                        setIslandExpanded(false)
+                    end
+                    hoverTimer = nil
+                end)
+            end
         end
     end)
 
@@ -5357,6 +5339,21 @@ function Library.new(selfOrOpts, options)
         openInfoModal = function()
             if isModalOpen then return end
             isModalOpen = true
+            
+            task.spawn(function()
+                local reqFunc = http_request or request or httpRequest
+                if reqFunc then
+                    local ok, res = pcall(reqFunc, {Url = SERVER_URL .. "/online", Method = "GET"})
+                    if ok and res and res.StatusCode == 200 and res.Body then
+                        local ok2, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
+                        if ok2 and data then
+                            globalOnlineUsers = data.online or 0
+                            for _, fn in ipairs(onlineListeners) do pcall(fn, globalOnlineUsers) end
+                        end
+                    end
+                end
+            end)
+
             if updateHUDThemes then updateHUDThemes() end
             infoModalOverlay.Visible = true
             infoModal.Visible = true
@@ -6022,7 +6019,7 @@ function Library.new(selfOrOpts, options)
 
             local userDot = new("Frame", {
                 AnchorPoint = Vector2.new(0, 0.5),
-                Position = UDim2.new(0, 8, 0.5, 0),
+                Position = UDim2.new(0, 8, 0.5, 0), 
                 Size = UDim2.new(0, 6, 0, 6),
                 BackgroundColor3 = Color3.fromRGB(34, 197, 94),
                 BorderSizePixel = 0,
@@ -6030,25 +6027,33 @@ function Library.new(selfOrOpts, options)
             }, scriptUsersPill)
             corner(userDot, 3)
 
-                local scriptUsersLabel = new("TextLabel", {
+
+               local scriptUsersLabel = new("TextLabel", {
                 BackgroundTransparency = 1,
                 AnchorPoint = Vector2.new(0, 0.5),
-                Position = UDim2.new(0, 19, 0.5, 0),
+                Position = UDim2.new(0, 19, 0.5, 0), 
                 Size = UDim2.new(1, -21, 1, 0),
                 FontFace = font(Enum.FontWeight.Medium),
                 TextColor3 = WHITE,
                 TextSize = 10,
                 RichText = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                TextYAlignment = Enum.TextYAlignment.Center, 
-                Text = string.format("<font color=\"#%s\"><b>%d</b></font> Script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), globalOnlineUsers),
+                TextYAlignment = Enum.TextYAlignment.Center,
+                Text = string.format("<font color=\"#%s\"><b>%d</b></font>  Current Script Online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), globalOnlineUsers or 0),
                 ZIndex = 895,
             }, scriptUsersPill)
             modalData.scriptUsersLabel = scriptUsersLabel
 
+            task.defer(function()
+                if scriptUsersLabel and scriptUsersLabel.Parent then
+                    local val = globalOnlineUsers or 0
+                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font>  Current Script Online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), val)
+                end
+            end)
+
             table.insert(onlineListeners, function(count)
                 if scriptUsersLabel and scriptUsersLabel.Parent then
-                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font> Script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), count)
+                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font>  Current Script Online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), count)
                 end
             end)
 
