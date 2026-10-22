@@ -1,3 +1,4 @@
+print(123)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -103,6 +104,37 @@ end
 
 fetchDiscordStats()
 
+
+local HttpService = game:GetService("HttpService")
+local SERVER_URL = "http://c-pl-1.apexnodes.xyz:10002"
+local globalOnlineUsers = 0
+local onlineListeners = {}
+
+local function fetchGlobalOnline()
+    task.spawn(function()
+        while task.wait(5) do -- раз в 5 секунд
+            local body = nil
+            local reqFunc = http_request or request or httpRequest
+            if reqFunc then
+                local ok, res = pcall(reqFunc, {Url = SERVER_URL .. "/online", Method = "GET"})
+                if ok and res and res.StatusCode == 200 then
+                    body = res.Body
+                end
+            end
+            if body and #body > 0 then
+                local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
+                if ok and data then
+                    globalOnlineUsers = data.online or 0
+                    for _, fn in ipairs(onlineListeners) do
+                        pcall(fn, globalOnlineUsers)
+                    end
+                end
+            end
+        end
+    end)
+end
+fetchGlobalOnline()
+
 local SupportedGames = {
     { Name = "Dead Rails", UniverseId = 7018190066, PlaceId = 116495829188952, Playing = 17700 },
     { Name = "Steal a Brainrot", UniverseId = 7709344486, PlaceId = 109983668079237, Playing = 109600 },
@@ -181,11 +213,7 @@ task.delay(10, function()
     fetchSupportedGamesPlaying()
 end)
 
-task.spawn(function()
-    while task.wait(30) do
-        fetchScriptActiveUsers()
-    end
-end)
+
 
 task.spawn(function()
     while task.wait(120) do
@@ -3174,8 +3202,8 @@ function Library.new(selfOrOpts, options)
     local watermark = new("Frame", {
         Name = "Watermark",
         AnchorPoint = Vector2.new(1, 0),
-        Position = UDim2.new(1, -20, 0, 48),
-        Size = UDim2.new(0, 0, 0, 28),
+        Position = UDim2.new(0.5, 0, 0, 14), 
+        Size = UDim2.new(0, 0, 0, 32),
         AutomaticSize = Enum.AutomaticSize.X,
         BackgroundColor3 = genv.uicontainer or Color3.fromRGB(18, 19, 24),
         BorderSizePixel = 0,
@@ -4036,8 +4064,25 @@ function Library.new(selfOrOpts, options)
     local islandStroke = stroke(island, Color3.fromRGB(36, 38, 48), 1, 0.45)
 
     island.MouseEnter:Connect(function()
-        if islandStroke then
-            TweenService:Create(islandStroke, TweenInfo.new(0.25), {Color = genv.accent or Color3.fromRGB(168, 85, 247), Transparency = 0.2}):Play()
+        if Library.IslandStyle == "Show on Hover" then
+            setIslandExpanded(true)
+        end
+    end)
+
+    task.spawn(function()
+        while island and island.Parent do
+            if Library.hidden and Library.IslandStyle == "Show on Hover" and not islandDragging then
+                local mouse = UserInputService:GetMouseLocation()
+                local pos = island.AbsolutePosition
+                local size = island.AbsoluteSize
+                local isHovering = mouse.X >= pos.X and mouse.X <= pos.X + size.X and mouse.Y >= pos.Y and mouse.Y <= pos.Y + size.Y
+                if isHovering and not islandExpandedState then
+                    setIslandExpanded(true)
+                elseif not isHovering and islandExpandedState then
+                    setIslandExpanded(false)
+                end
+            end
+            task.wait(0.05)
         end
     end)
     island.MouseLeave:Connect(function()
@@ -4190,22 +4235,22 @@ function Library.new(selfOrOpts, options)
         ZIndex = 853,
     }, expHeader)
 
-    local islandUsername = new("TextLabel", {
+      local islandUsername = new("TextLabel", {
         Position = UDim2.new(0, 44, 0, 15),
-        Size = UDim2.new(1, -78, 0, 13),
+        Size = UDim2.new(1, -125, 0, 13), 
         BackgroundTransparency = 1,
         FontFace = font(Enum.FontWeight.Medium),
         TextColor3 = MUTED,
         TextSize = 10,
         TextTruncate = Enum.TextTruncate.AtEnd,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Text = "@" .. LocalPlayer.Name .. "  •  " .. getExecName(),
+        Text = "@" .. LocalPlayer.Name .. " • " .. getExecName(),
         ZIndex = 853,
     }, expHeader)
 
     local islandGameLabel = new("TextLabel", {
         Position = UDim2.new(0, 44, 0, 28),
-        Size = UDim2.new(1, -125, 0, 13),
+        Size = UDim2.new(1, -125, 0, 13), 
         BackgroundTransparency = 1,
         FontFace = font(Enum.FontWeight.Medium),
         TextColor3 = genv.accent or Color3.fromRGB(168, 85, 247),
@@ -4375,7 +4420,7 @@ function Library.new(selfOrOpts, options)
         Padding = UDim.new(0, 6),
     }, actTile)
 
-    local actTileIcon = new("ImageLabel", {
+   local actTileIcon = new("ImageLabel", {
         Size = UDim2.new(0, 14, 0, 14),
         BackgroundTransparency = 1,
         Image = "rbxassetid://138635884129147",
@@ -4390,7 +4435,7 @@ function Library.new(selfOrOpts, options)
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
         RichText = true,
-        Text = "<font color=\"#8e92a4\">Active</font>  <font color=\"#ffffff\"><b>0</b></font>",
+        Text = string.format("<font color=\"#8e92a4\">Online</font>  <font color=\"#ffffff\"><b>%d</b></font>", globalOnlineUsers),
         ZIndex = 854,
     }, actTile)
 
@@ -4968,8 +5013,8 @@ function Library.new(selfOrOpts, options)
             end
             islandFpsVal.Text = string.format("<font color=\"#8e92a4\">FPS</font>  <font color=\"#ffffff\"><b>%d</b></font>", currentFps)
             islandPingVal.Text = string.format("<font color=\"#8e92a4\">Ping</font>  <font color=\"#ffffff\"><b>%d</b><font color=\"#8e92a4\"> ms</font></font>", ping)
-            islandPlrVal.Text = string.format("<font color=\"#8e92a4\">Plrs</font>  <font color=\"#ffffff\"><b>%d</b></font>", playerCount)
-            islandActiveVal.Text = string.format("<font color=\"#8e92a4\">Active</font>  <font color=\"#ffffff\"><b>%d</b></font>", scriptActiveUsers)
+          islandPlrVal.Text = string.format("<font color=\"#8e92a4\">Players</font>  <font color=\"#ffffff\"><b>%d</b></font>", playerCount)
+            islandActiveVal.Text = string.format("<font color=\"#8e92a4\">Online</font>  <font color=\"#ffffff\"><b>%d</b></font>", globalOnlineUsers)
 
             wmPingText.Text = string.format("<font color=\"#ffffff\"><b>%d</b></font> <font color=\"#8e92a4\">ms</font>", ping)
 
@@ -5964,14 +6009,14 @@ function Library.new(selfOrOpts, options)
                 RichText = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextYAlignment = Enum.TextYAlignment.Center,
-                Text = string.format("<font color=\"#%s\"><b>%d</b></font> Active Script Users Rn", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), scriptActiveUsers),
+                Text = string.format("<font color=\"#%s\"><b>%d</b></font> Current script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), globalOnlineUsers),
                 ZIndex = 895,
             }, scriptUsersPill)
             modalData.scriptUsersLabel = scriptUsersLabel
 
-            table.insert(scriptUserListeners, function(count)
+            table.insert(onlineListeners, function(count)
                 if scriptUsersLabel and scriptUsersLabel.Parent then
-                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font> Active Script Users Rn", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), count)
+                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font> Current script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), count)
                 end
             end)
 
@@ -7238,16 +7283,11 @@ function Library.new(selfOrOpts, options)
             if side ~= "middle" then
                 local layer = side == "right" and stickyLayerRight or stickyLayerLeft
                 local list = side == "right" and stickyRightList or stickyLeftList
-
                 local clone = title:Clone()
                 clone.Position = UDim2.new(0, 0, 0, 0)
-                clone.Size = UDim2.new(1, 0, 0, 15)
-                clone.TextScaled = false
-                clone.TextSize = 13
                 clone.Visible = false
                 clone.ZIndex = 51
                 clone.Parent = layer
-                
                 table.insert(list, {title = title, clone = clone})
             end
         end
