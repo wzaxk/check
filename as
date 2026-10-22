@@ -1,4 +1,4 @@
-print(15)
+print(1)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -3944,7 +3944,7 @@ function Library.new(selfOrOpts, options)
                     row.TouchTap:Connect(runAct)
                 else
                     local state = kb.getState and kb.getState()
-                    local switchTrack = new("Frame", {
+                                       local switchTrack = new("Frame", {
                         Size = UDim2.new(0, 28, 0, 16),
                         BackgroundColor3 = (state == true) and (genv.togglecoloron or genv.accent or Color3.fromRGB(168, 85, 247)) or (genv.togglecoloroff or Color3.fromRGB(38, 40, 50)),
                         BorderSizePixel = 0,
@@ -3962,6 +3962,38 @@ function Library.new(selfOrOpts, options)
                         ZIndex = 855,
                     }, switchTrack)
                     pill(switchKnob)
+
+                    keybindHudRows[kb.name] = {
+                        switchTrack = switchTrack,
+                        switchKnob = switchKnob,
+                        rowStrk = rowStrk,
+                        rScale = rScale,
+                        getState = kb.getState
+                    }
+
+                    local lastTog = 0
+                    local function toggleRow()
+                        if tick() - lastTog < 0.15 then return end
+                        lastTog = tick()
+
+                        -- АНИМАЦИЯ СЖАТИЯ ПРИ КЛИКЕ (как было в основном UI)
+                        TweenService:Create(switchKnob, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 14, 0, 11)}):Play()
+                        task.delay(0.09, function()
+                            if switchKnob and switchKnob.Parent then
+                                TweenService:Create(switchKnob, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 11, 0, 11)}):Play()
+                            end
+                        end)
+
+                        if kb.toggle then
+                            kb.toggle()
+                        elseif kb.callback then
+                            kb.callback(not (kb.getState and kb.getState() or false))
+                        end
+                        updateKeybindHudStates()
+                    end
+                    row.MouseButton1Click:Connect(toggleRow)
+                    row.TouchTap:Connect(toggleRow)
+
 
                     keybindHudRows[kb.name] = {
                         switchTrack = switchTrack,
@@ -7261,7 +7293,7 @@ function Library.new(selfOrOpts, options)
             return Switch, Circle
         end
 
-        local function makeToggleObject(cfg, Switch, Circle)
+                local function makeToggleObject(cfg, Switch, Circle)
             local obj = {state = cfg.enabled or false, callback = cfg.callback, flag = cfg.flag}
             if Library.savedFlags and type(Library.savedFlags[cfg.flag]) == "boolean" then
                 obj.state = Library.savedFlags[cfg.flag]
@@ -7271,28 +7303,17 @@ function Library.new(selfOrOpts, options)
                 if newState ~= nil then self.state = newState else self.state = not self.state end
                 Library.Flags[self.flag] = self.state
                 Switch:SetAttribute("State", self.state)
-                local tiStretch = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                local tiSlide = TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
                 local colorTi = TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+                local slideTi = TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+                
                 if self.state then
                     TweenService:Create(Switch, colorTi, {BackgroundColor3 = genv.togglecoloron or genv.accent or Color3.fromRGB(168, 85, 247)}):Play()
-                    TweenService:Create(Circle, tiStretch, {Size = UDim2.new(0, 14, 0, 11)}):Play()
-                    TweenService:Create(Circle, tiSlide, {Position = UDim2.new(1, -13, 0.5, 0)}):Play()
-                    task.delay(0.09, function()
-                        if Circle and Circle.Parent then
-                            TweenService:Create(Circle, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 11, 0, 11)}):Play()
-                        end
-                    end)
+                    TweenService:Create(Circle, slideTi, {Position = UDim2.new(1, -13, 0.5, 0)}):Play()
                 else
                     TweenService:Create(Switch, colorTi, {BackgroundColor3 = genv.togglecoloroff or Color3.fromRGB(60, 64, 72)}):Play()
-                    TweenService:Create(Circle, tiStretch, {Size = UDim2.new(0, 14, 0, 11)}):Play()
-                    TweenService:Create(Circle, tiSlide, {Position = UDim2.new(0, 2, 0.5, 0)}):Play()
-                    task.delay(0.09, function()
-                        if Circle and Circle.Parent then
-                            TweenService:Create(Circle, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 11, 0, 11)}):Play()
-                        end
-                    end)
+                    TweenService:Create(Circle, slideTi, {Position = UDim2.new(0, 2, 0.5, 0)}):Play()
                 end
+                
                 if not skipCallback then
                     Library.save_flags(self.flag)
                 end
@@ -7317,7 +7338,7 @@ function Library.new(selfOrOpts, options)
             return obj
         end
 
-        function Module:create_title(arg)
+              function Module:create_title(arg)
             local cfg = resolve(self, arg)
             local side = getSide(cfg)
             local title = new("TextLabel", {
@@ -7328,10 +7349,11 @@ function Library.new(selfOrOpts, options)
                 ZIndex = 2,
                 FontFace = font(),
                 TextColor3 = WHITE,
-                TextScaled = true,
-                TextSize = 13,
+                TextScaled = false, 
+                TextSize = 13,    
                 Text = cfg.name or "",
                 TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
             }, itemsSection)
             new("UIPadding", {PaddingLeft = UDim.new(0, 4)}, title)
             registerItem(title, side, 15, cfg.name)
