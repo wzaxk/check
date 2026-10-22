@@ -1,4 +1,4 @@
-print(17)
+print(0)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -3976,7 +3976,6 @@ function Library.new(selfOrOpts, options)
                         if tick() - lastTog < 0.15 then return end
                         lastTog = tick()
 
-                        -- АНИМАЦИЯ СЖАТИЯ ПРИ КЛИКЕ (как было в основном UI)
                         TweenService:Create(switchKnob, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 14, 0, 11)}):Play()
                         task.delay(0.09, function()
                             if switchKnob and switchKnob.Parent then
@@ -4547,9 +4546,7 @@ function Library.new(selfOrOpts, options)
             end)
         end
     end)
-    -- ================================================================
-    -- HOVER ФИКС ЧЕРЕЗ HEARTBEAT (работает даже когда UI скрыт)
-    -- ================================================================
+
     local islandDragging = false
     local islandMoved = false
     local islandDragStart, islandStartPos
@@ -4595,7 +4592,7 @@ function Library.new(selfOrOpts, options)
             end
         end
     end)
-    -- ================================================================
+
 
     island.InputBegan:Connect(function(input)
         if not Library.IslandDraggable then return end
@@ -7075,12 +7072,12 @@ function Library.new(selfOrOpts, options)
             return frame
         end
 
-        local stickyLayerLeft = makeSticky("StickyLeft", 0.245, 0.36255, 50)
-        local stickyLayerRight = makeSticky("StickyRight", 0.62245, 0.36255, 50)
-        local stickyMerge = makeSticky("StickyMerge", 0.245, 0.74, 49)
+        local stickyLayerLeft = makeSticky("StickyLeft", 0.245, 0.3503, 50)
+        local stickyLayerRight = makeSticky("StickyRight", 0.6097, 0.3503, 50)
+        local stickyMerge = makeSticky("StickyMerge", 0.245, 0.715, 49)
         local stickyLeftList, stickyRightList = {}, {}
 
-               local function updateSticky(list, layer)
+        local function updateSticky(list, layer)
             if not itemsSection.Visible or not itemsSection.Parent then
                 layer.Visible = false
                 for _, e in ipairs(list) do e.clone.Visible = false end
@@ -7088,27 +7085,29 @@ function Library.new(selfOrOpts, options)
             end
             local secTop = itemsSection.AbsolutePosition.Y
             local anyStuck = false
-            local activeClone = nil 
             
+            for _, entry in ipairs(list) do
+                entry.clone.Visible = false
+            end
+            
+  
             for i, entry in ipairs(list) do
                 local relTop = entry.title.AbsolutePosition.Y - secTop
                 local h = entry.title.AbsoluteSize.Y
-                if relTop >= 0 then
-                    entry.clone.Visible = false
-                else
-                    local pushY = 0
+                
+                if relTop < 0 then 
                     local nextEntry = list[i + 1]
+                    local pushY = 0
                     if nextEntry then
                         local nextTop = nextEntry.title.AbsolutePosition.Y - secTop
                         if nextTop < h then pushY = nextTop - h end
                     end
-                    if pushY + h <= 7 then
-                        entry.clone.Visible = false
-                    else
+                    
+                    if pushY + h > 7 then
                         entry.clone.Position = UDim2.new(0, 0, 0, pushY)
                         entry.clone.Visible = true
                         anyStuck = true
-                        activeClone = entry.clone
+                        break
                     end
                 end
             end
