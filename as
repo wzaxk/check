@@ -1,4 +1,4 @@
-print(123)
+print(1)
 local UserInputService = game:GetService('UserInputService')
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
@@ -104,15 +104,14 @@ end
 
 fetchDiscordStats()
 
-
 local HttpService = game:GetService("HttpService")
 local SERVER_URL = "http://c-pl-1.apexnodes.xyz:10002"
-local globalOnlineUsers = 0
+local globalOnlineUsers = nil 
 local onlineListeners = {}
 
 local function fetchGlobalOnline()
     task.spawn(function()
-        while task.wait(5) do -- раз в 5 секунд
+        while true do
             local body = nil
             local reqFunc = http_request or request or httpRequest
             if reqFunc then
@@ -130,10 +129,16 @@ local function fetchGlobalOnline()
                     end
                 end
             end
+            task.wait(1) 
         end
     end)
 end
 fetchGlobalOnline()
+
+local function getOnlineText()
+    return globalOnlineUsers and tostring(globalOnlineUsers) or "--"
+end
+
 
 local SupportedGames = {
     { Name = "Dead Rails", UniverseId = 7018190066, PlaceId = 116495829188952, Playing = 17700 },
@@ -3201,7 +3206,7 @@ function Library.new(selfOrOpts, options)
 
     local watermark = new("Frame", {
         Name = "Watermark",
-        AnchorPoint = Vector2.new(1, 0),
+        AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 14), 
         Size = UDim2.new(0, 0, 0, 32),
         AutomaticSize = Enum.AutomaticSize.X,
@@ -4063,31 +4068,58 @@ function Library.new(selfOrOpts, options)
     local islandCorner = corner(island, 17)
     local islandStroke = stroke(island, Color3.fromRGB(36, 38, 48), 1, 0.45)
 
+
+     local hoverTimer = nil
+
     island.MouseEnter:Connect(function()
         if Library.IslandStyle == "Show on Hover" then
+            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
             setIslandExpanded(true)
         end
     end)
 
-    task.spawn(function()
-        while island and island.Parent do
-            if Library.hidden and Library.IslandStyle == "Show on Hover" and not islandDragging then
-                local mouse = UserInputService:GetMouseLocation()
-                local pos = island.AbsolutePosition
-                local size = island.AbsoluteSize
-                local isHovering = mouse.X >= pos.X and mouse.X <= pos.X + size.X and mouse.Y >= pos.Y and mouse.Y <= pos.Y + size.Y
-                if isHovering and not islandExpandedState then
-                    setIslandExpanded(true)
-                elseif not isHovering and islandExpandedState then
-                    setIslandExpanded(false)
+    island.MouseLeave:Connect(function()
+        if Library.IslandStyle == "Show on Hover" and not islandDragging then
+            if hoverTimer then task.cancel(hoverTimer) end
+            hoverTimer = task.delay(0.15, function()
+                if not islandExpandedState or islandDragging then return end
+                local mPos = UserInputService:GetMouseLocation()
+                local aPos = island.AbsolutePosition
+                local aSize = island.AbsoluteSize
+                -- Проверяем, находится ли мышь над островом
+                if mPos.X >= aPos.X and mPos.X <= aPos.X + aSize.X and mPos.Y >= aPos.Y and mPos.Y <= aPos.Y + aSize.Y then
+                    return
                 end
-            end
-            task.wait(0.05)
+                setIslandExpanded(false)
+            end)
         end
     end)
-    island.MouseLeave:Connect(function()
-        if islandStroke then
-            TweenService:Create(islandStroke, TweenInfo.new(0.25), {Color = Color3.fromRGB(36, 38, 48), Transparency = 0.45}):Play()
+
+    bind(RunService.Heartbeat, function()
+        if not Library.hidden or not island.Visible then return end
+        if Library.IslandStyle ~= "Show on Hover" or islandDragging then return end
+        
+        local mPos = UserInputService:GetMouseLocation()
+        local aPos = island.AbsolutePosition
+        local aSize = island.AbsoluteSize
+        
+        local isHovering = mPos.X >= aPos.X and mPos.X <= aPos.X + aSize.X and mPos.Y >= aPos.Y and mPos.Y <= aPos.Y + aSize.Y
+        
+        if isHovering and not islandExpandedState then
+            if hoverTimer then task.cancel(hoverTimer); hoverTimer = nil end
+            setIslandExpanded(true)
+        elseif not isHovering and islandExpandedState then
+            if not hoverTimer then
+                hoverTimer = task.delay(0.15, function()
+                    local mPos2 = UserInputService:GetMouseLocation()
+                    local aPos2 = island.AbsolutePosition
+                    local aSize2 = island.AbsoluteSize
+                    if not (mPos2.X >= aPos2.X and mPos2.X <= aPos2.X + aSize2.X and mPos2.Y >= aPos2.Y and mPos2.Y <= aPos2.Y + aSize2.Y) then
+                        setIslandExpanded(false)
+                    end
+                    hoverTimer = nil
+                end)
+            end
         end
     end)
     local islandScale = new("UIScale", {Scale = 1}, island)
@@ -4420,7 +4452,7 @@ function Library.new(selfOrOpts, options)
         Padding = UDim.new(0, 6),
     }, actTile)
 
-   local actTileIcon = new("ImageLabel", {
+    local actTileIcon = new("ImageLabel", {
         Size = UDim2.new(0, 14, 0, 14),
         BackgroundTransparency = 1,
         Image = "rbxassetid://138635884129147",
@@ -4435,7 +4467,7 @@ function Library.new(selfOrOpts, options)
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
         RichText = true,
-        Text = string.format("<font color=\"#8e92a4\">Online</font>  <font color=\"#ffffff\"><b>%d</b></font>", globalOnlineUsers),
+        Text = string.format("<font color=\"#8e92a4\">Online</font>  <font color=\"#ffffff\"><b>%s</b></font>", getOnlineText()),
         ZIndex = 854,
     }, actTile)
 
@@ -5013,8 +5045,8 @@ function Library.new(selfOrOpts, options)
             end
             islandFpsVal.Text = string.format("<font color=\"#8e92a4\">FPS</font>  <font color=\"#ffffff\"><b>%d</b></font>", currentFps)
             islandPingVal.Text = string.format("<font color=\"#8e92a4\">Ping</font>  <font color=\"#ffffff\"><b>%d</b><font color=\"#8e92a4\"> ms</font></font>", ping)
-          islandPlrVal.Text = string.format("<font color=\"#8e92a4\">Players</font>  <font color=\"#ffffff\"><b>%d</b></font>", playerCount)
-            islandActiveVal.Text = string.format("<font color=\"#8e92a4\">Online</font>  <font color=\"#ffffff\"><b>%d</b></font>", globalOnlineUsers)
+            islandPlrVal.Text = string.format("<font color=\"#8e92a4\">Players</font>  <font color=\"#ffffff\"><b>%d</b></font>", playerCount)
+            islandActiveVal.Text = string.format("<font color=\"#8e92a4\">Online</font>  <font color=\"#ffffff\"><b>%s</b></font>", getOnlineText())
 
             wmPingText.Text = string.format("<font color=\"#ffffff\"><b>%d</b></font> <font color=\"#8e92a4\">ms</font>", ping)
 
@@ -5998,7 +6030,7 @@ function Library.new(selfOrOpts, options)
             }, scriptUsersPill)
             corner(userDot, 3)
 
-            local scriptUsersLabel = new("TextLabel", {
+                local scriptUsersLabel = new("TextLabel", {
                 BackgroundTransparency = 1,
                 AnchorPoint = Vector2.new(0, 0.5),
                 Position = UDim2.new(0, 19, 0.5, 0),
@@ -6008,15 +6040,15 @@ function Library.new(selfOrOpts, options)
                 TextSize = 10,
                 RichText = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                TextYAlignment = Enum.TextYAlignment.Center,
-                Text = string.format("<font color=\"#%s\"><b>%d</b></font> Current script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), globalOnlineUsers),
+                TextYAlignment = Enum.TextYAlignment.Center, 
+                Text = string.format("<font color=\"#%s\"><b>%d</b></font> Script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), globalOnlineUsers),
                 ZIndex = 895,
             }, scriptUsersPill)
             modalData.scriptUsersLabel = scriptUsersLabel
 
             table.insert(onlineListeners, function(count)
                 if scriptUsersLabel and scriptUsersLabel.Parent then
-                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font> Current script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), count)
+                    scriptUsersLabel.Text = string.format("<font color=\"#%s\"><b>%d</b></font> Script online", colorToHex(genv.accent or Color3.fromRGB(168, 85, 247)), count)
                 end
             end)
 
