@@ -1,4 +1,4 @@
---1238
+--18
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -713,7 +713,7 @@ if typeof(mouse2release) == "function" then pcall(mouse2release) end
 end
 
 local function buildCameraCode(cf)
-    local p, lx, ly, lz, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
+    local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = cf:GetComponents()
     return string.format([[
 pcall(function()
     local cam = workspace.CurrentCamera
@@ -722,7 +722,7 @@ pcall(function()
         cam.CFrame = CFrame.new(%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f)
     end
 end)
-]], p.X, p.Y, p.Z, r00, r01, r02, r10, r11, r12, r20, r21, r22)
+]], x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22)
 end
 
 local function buildCameraRestoreCode()
@@ -1363,22 +1363,14 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
         table.insert(remoteControl.connections, UserInputService.InputEnded:Connect(onInputEnded))
     end
 
-    local lastCamCF = nil
     local camConn = RunService.RenderStepped:Connect(function()
         if not remoteControl.active then return end
         local cam = workspace.CurrentCamera
         if not cam then return end
-        local cf = cam.CFrame
-        if lastCamCF then
-            local posDelta = (cf.Position - lastCamCF.Position).Magnitude
-            local rotDot = cf.LookVector:Dot(lastCamCF.LookVector)
-            if posDelta < 0.01 and rotDot > 0.9999 then return end
-        end
         local now = os.clock()
         if now - remoteControl.lastCamSend < 0.03 then return end
         remoteControl.lastCamSend = now
-        lastCamCF = cf
-        dispatchRawCode(targets, buildCameraCode(cf))
+        dispatchRawCode(targets, buildCameraCode(cam.CFrame))
     end)
     table.insert(remoteControl.connections, camConn)
 
