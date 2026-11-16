@@ -1,3 +1,4 @@
+--123
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -1148,7 +1149,82 @@ local panelRef = { sg = nil, main = nil, scale = nil, onClose = nil }
 local dragConn = nil
 local endConn = nil
 local specConn = nil
+local function buildFMCActivateCode()
+    return [[
+local plr = game:GetService("Players").LocalPlayer
+if not plr then return end
 
+pcall(function()
+    local pm = plr:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 5)
+    if pm then pm:GetControls():Disable() end
+end)
+
+_G.__FMC_Keys = _G.__FMC_Keys or {}
+_G.__FMC_Active = true
+
+if _G.__FMC_LoopConn then pcall(function() _G.__FMC_LoopConn:Disconnect() end) end
+
+local RS = game:GetService("RunService")
+_G.__FMC_LoopConn = RS.RenderStepped:Connect(function()
+    if not _G.__FMC_Active then return end
+    local char = plr.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    local keys = _G.__FMC_Keys or {}
+    local x, z = 0, 0
+    if keys.W then z = z - 1 end
+    if keys.S then z = z + 1 end
+    if keys.A then x = x - 1 end
+    if keys.D then x = x + 1 end
+
+    local cam = workspace.CurrentCamera
+    local camCF = cam and cam.CFrame or CFrame.new()
+    local fwd = Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
+    local rgt = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
+    if fwd.Magnitude > 0.001 then fwd = fwd.Unit else fwd = Vector3.new(0, 0, -1) end
+    if rgt.Magnitude > 0.001 then rgt = rgt.Unit else rgt = Vector3.new(1, 0, 0) end
+
+    local dir = fwd * (-z) + rgt * x
+    if dir.Magnitude > 0.01 then
+        hum:Move(dir.Unit, false)
+    else
+        hum:Move(Vector3.new(0, 0, 0), false)
+    end
+
+    if keys.Space then
+        hum.Jump = true
+    end
+end)
+]]
+end
+
+local function buildFMCDeactivateCode()
+    return [[
+local plr = game:GetService("Players").LocalPlayer
+_G.__FMC_Active = false
+_G.__FMC_Keys = {}
+
+if _G.__FMC_LoopConn then
+    pcall(function() _G.__FMC_LoopConn:Disconnect() end)
+    _G.__FMC_LoopConn = nil
+end
+
+pcall(function()
+    local pm = plr:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 5)
+    if pm then pm:GetControls():Enable() end
+end)
+
+if plr.Character then
+    local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum:Move(Vector3.new(0, 0, 0), false) end
+end
+
+local cam = workspace.CurrentCamera
+if cam then cam.CameraType = Enum.CameraType.Custom end
+]]
+end
 local remoteControl = {
     active = false,
     spectateOnly = false,
@@ -1164,14 +1240,27 @@ local function stopRemoteControl(restoreCamera)
         pcall(function() c:Disconnect() end)
     end
     remoteControl.connections = {}
-    if remoteControl.active and remoteControl.targets and not remoteControl.cameraRestored then
-        dispatchRawCode(remoteControl.targets, buildCameraRestoreCode())
-        remoteControl.cameraRestored = true
+
+    if remoteControl.active and remoteControl.targets then
+        if not remoteControl.spectateOnly then
+            dispatchRawCode(remoteControl.targets, buildFMCDeactivateCode())
+        end
+        if not remoteControl.cameraRestored then
+            dispatchRawCode(remoteControl.targets, buildCameraRestoreCode())
+            remoteControl.cameraRestored = true
+        end
     end
+
     remoteControl.active = false
     remoteControl.spectateOnly = false
     remoteControl.targets = nil
     remoteControl.targetPlayer = nil
+
+    if player.Character then
+        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Anchored = false end
+    end
+
     if restoreCamera and player.Character then
         local myHum = player.Character:FindFirstChildOfClass("Humanoid")
         if myHum then workspace.CurrentCamera.CameraSubject = myHum end
@@ -1181,6 +1270,7 @@ end
 local function startRemoteControl(targets, targetPlayer, spectateOnly)
     stopRemoteControl(true)
     if not targets or #targets == 0 then return false end
+
     remoteControl.active = true
     remoteControl.spectateOnly = spectateOnly
     remoteControl.targets = targets
@@ -1204,30 +1294,47 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
     end
 
     if not spectateOnly then
+        local function applyOwnerFreeze()
+            if player.Character then
+                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then hrp.Anchored = true end
+            end
+        end
+        applyOwnerFreeze()
+        table.insert(remoteControl.connections, player.CharacterAdded:Connect(function()
+            task.wait(0.3)
+            if remoteControl.active and not remoteControl.spectateOnly then
+                applyOwnerFreeze()
+            end
+        end))
+
+        dispatchRawCode(targets, buildFMCActivateCode())
+
+        local keyMap = {
+            [Enum.KeyCode.W] = "W",
+            [Enum.KeyCode.A] = "A",
+            [Enum.KeyCode.S] = "S",
+            [Enum.KeyCode.D] = "D",
+            [Enum.KeyCode.Space] = "Space",
+        }
+        local function sendKey(name, val)
+            dispatchRawCode(targets, string.format(
+                "_G.__FMC_Keys = _G.__FMC_Keys or {}; _G.__FMC_Keys.%s = %s",
+                name, tostring(val)
+            ))
+        end
         local function onInputBegan(inp, gp)
             if gp then return end
             if inp.UserInputType == Enum.UserInputType.Keyboard then
-                local k = inp.KeyCode.Name
-                if k ~= "Unknown" then
-                    dispatchRawCode(targets, buildInputCode("keydown", k))
-                end
-            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
-                dispatchRawCode(targets, buildInputCode("mouse1down"))
-            elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
-                dispatchRawCode(targets, buildInputCode("mouse2down"))
+                local name = keyMap[inp.KeyCode]
+                if name then sendKey(name, true) end
             end
         end
         local function onInputEnded(inp, gp)
             if gp then return end
             if inp.UserInputType == Enum.UserInputType.Keyboard then
-                local k = inp.KeyCode.Name
-                if k ~= "Unknown" then
-                    dispatchRawCode(targets, buildInputCode("keyup", k))
-                end
-            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
-                dispatchRawCode(targets, buildInputCode("mouse1up"))
-            elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
-                dispatchRawCode(targets, buildInputCode("mouse2up"))
+                local name = keyMap[inp.KeyCode]
+                if name then sendKey(name, false) end
             end
         end
         table.insert(remoteControl.connections, UserInputService.InputBegan:Connect(onInputBegan))
@@ -1245,6 +1352,7 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
         end
     end)
     table.insert(remoteControl.connections, camConn)
+
     return true
 end
 
@@ -1353,9 +1461,9 @@ function buildAdminPanel()
     title.Font = Enum.Font.GothamBold
     title.TextSize = 18
 
-    local hideBtn = aButton(header, "—", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
-        animateClose()
-    end)
+local hideBtn = aButton(header, "—", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
+    animateClose(nil, true)
+end)
     hideBtn.Position = UDim2.new(1, -72, 0.5, -14)
 
     local closeBtn = aButton(header, "X", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
