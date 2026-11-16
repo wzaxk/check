@@ -1,3 +1,4 @@
+--print(123)
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -348,18 +349,7 @@ local function dispatchCommand(targets, cmdType, payload)
         gameId = gameIdStr, placeId = placeIdStr,
     }
     if targets == nil then
-        local freshList = getUsersFresh()
-        local ids = {}
-        for _, p in ipairs(freshList) do
-            if p.id and p.id ~= clientId then
-                table.insert(ids, p.id)
-            end
-        end
-        if #ids == 0 then
-            return nil
-        end
-        body.targets = ids
-        body.all = false
+        body.all = true
     else
         body.targets = targets
         body.all = false
@@ -820,6 +810,8 @@ function buildAdminPanel()
     if old then old:Destroy() end
     allDropdowns = {}
 
+    task.spawn(function() pcall(getUsersCached) end)
+
     local sg = aNew("ScreenGui", {
         Name = "MoondietyAdminPanel", ResetOnSpawn = false,
         IgnoreGuiInset = true, DisplayOrder = 100000,
@@ -1146,13 +1138,15 @@ function buildAdminPanel()
             local players = s.players or {}
             local parts = {}
             for _, p in ipairs(players) do
-                local pName = tostring(p.name or "?")
+                local uname = tostring(p.username or "")
+                local dname = tostring(p.displayName or p.name or "")
                 local pCountry = tostring(p.country or "?")
-                local uname = p.username or ""
-                local display = pName
-                if uname ~= "" and uname ~= pName then
-                    display = uname .. " (" .. pName .. ")"
+                local display = uname
+                if dname ~= "" and dname ~= uname then
+                    display = uname .. " (" .. dname .. ")"
                 end
+                if display == "" then display = dname end
+                if display == "" then display = "?" end
                 table.insert(parts, display .. " | " .. pCountry)
             end
             local pJobId = s.jobId or s.job_id or s.id or ""
@@ -1205,10 +1199,6 @@ function buildAdminPanel()
                 pcall(refreshServers)
             end
         end
-    end)
-
-    task.spawn(function()
-        pcall(getUsersCached)
     end)
 
     setActiveTab("User Panel")
