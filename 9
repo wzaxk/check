@@ -1,4 +1,3 @@
---123
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -220,14 +219,11 @@ local function aCodeInput(parent, placeholder, defaultHeight, maxHeight)
         local text = box.Text or ""
         local lines = 1
         for _ in text:gmatch("\n") do lines = lines + 1 end
-        
         box.TextYAlignment = (lines > 1) and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
-        
         local lineH = 16
         local fromLines = lines * lineH + 16
         local fromBounds = box.TextBounds.Y + 16
         local needed = math.max(fromLines, fromBounds, defaultHeight - 8)
-        
         box.Size = UDim2.new(1, 0, 0, needed)
         local frameH = math.clamp(needed + 8, defaultHeight, maxHeight)
         f.Size = UDim2.new(1, 0, 0, frameH)
@@ -1058,7 +1054,7 @@ function buildAdminPanel()
     local spectateToggle = aToggleButton(rightCol, "Spectate", UDim2.new(1, 0, 0, 30), function(state)
         local ids = getAllSelectedIds()
         if #ids == 0 then return end
-        dispatchCommand(ids, "spectate", { state = state })
+        dispatchCommand(ids, "spectate", { state = state, ownerId = userId })
     end)
     spectateToggle.Position = UDim2.new(0, 0, 0, 102)
 
@@ -1147,24 +1143,24 @@ function buildAdminPanel()
             local key = tostring(s.jobId or s.id or math.random())
             seen[key] = true
 
-            local pName = s.username or s.name or s.playerName or s.displayName or "?"
-            local pDisp = s.displayName or s.display_name or s.username or s.name or "?"
-            local sUsers = s.scriptUsers or s.scriptCount or s.count or s.users or s.userCount or "0"
-            local pCountry = s.country or s.countryCode or s.region or s.location or "?"
-            local pPlaceId = s.placeId or s.place_id or placeIdStr
+            local players = s.players or {}
+            local parts = {}
+            for _, p in ipairs(players) do
+                local pName = tostring(p.name or "?")
+                local pCountry = tostring(p.country or "?")
+                local uname = p.username or ""
+                local display = pName
+                if uname ~= "" and uname ~= pName then
+                    display = uname .. " (" .. pName .. ")"
+                end
+                table.insert(parts, display .. " | " .. pCountry)
+            end
             local pJobId = s.jobId or s.job_id or s.id or ""
+            local pPlaceId = s.placeId or s.place_id or placeIdStr
+            local txt = table.concat(parts, "   ,   ")
+            if txt == "" then txt = "(empty)" end
 
-            local sPlayers = s.players
-            if typeof(sPlayers) == "table" then sPlayers = #sPlayers end
-            sPlayers = tostring(sPlayers or s.playerCount or s.player_count or "0")
-
-            local sMax = s.maxPlayers
-            if typeof(sMax) == "table" then sMax = #sMax end
-            sMax = tostring(sMax or s.max_players or s.maxPlayerCount or "0")
-
-            local txt = tostring(pName) .. " (" .. tostring(pDisp) .. ") | " .. tostring(sUsers) .. " | " .. tostring(pCountry) .. " | " .. sPlayers .. "/" .. sMax
             local btn = currentButtons[key]
-
             if btn and btn.Parent then
                 btn.Text = txt
                 btn.Position = UDim2.new(0, 4, 0, y)
