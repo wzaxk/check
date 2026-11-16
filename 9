@@ -1,4 +1,4 @@
---1238
+--45
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -302,6 +302,20 @@ local function fetchUsersIntoCache()
     if data and data.players then
         usersCache.list = dedupePlayers(data.players)
         usersCache.at = os.clock()
+        for _, p in ipairs(usersCache.list) do
+            local uid = tonumber(p.userId)
+            if uid and not usernameFallbackCache[uid] and not usernameFetching[uid] then
+                usernameFetching[uid] = true
+                task.spawn(function()
+                    local ok, n = pcall(function() return Players:GetNameFromUserIdAsync(uid) end)
+                    usernameFetching[uid] = nil
+                    if ok and n then
+                        usernameFallbackCache[uid] = n
+                        notifyDropdowns()
+                    end
+                end)
+            end
+        end
     end
 end
 
@@ -727,24 +741,21 @@ if typeof(mouse2release) == "function" then pcall(mouse2release) end
     return nil
 end
 
-local function buildCameraCode(offsetCF, seq, sessionId)
-    local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = offsetCF:GetComponents()
+local function buildCameraCode(rot, dist, sessionId)
+    local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = rot:GetComponents()
     return string.format([==[
-if _G.__FMC_SessionId == '%s' and %d > (_G.__FMC_CamSeq or 0) then
-    _G.__FMC_CamSeq = %d
-    _G.__FMC_CamQueue = _G.__FMC_CamQueue or {}
-    table.insert(_G.__FMC_CamQueue, { t = os.clock(), cf = CFrame.new(%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f) })
-    while #_G.__FMC_CamQueue > 12 do table.remove(_G.__FMC_CamQueue, 1) end
+if _G.__FMC_SessionId == '%s' then
+    _G.__FMC_CamRot = CFrame.new(0, 0, 0, %f, %f, %f, %f, %f, %f, %f, %f, %f)
+    _G.__FMC_CamDist = %f
 end
-]==], sessionId, seq, seq, x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22)
+]==], sessionId, R00, R01, R02, R10, R11, R12, R20, R21, R22, dist)
 end
 
 local function buildCameraRestoreCode()
     return [[
-_G.__FMC_CamTarget = nil
-_G.__FMC_CamCurrent = nil
-_G.__FMC_CamQueue = nil
-_G.__FMC_CamSeq = 0
+_G.__FMC_CamRot = nil
+_G.__FMC_CamDist = nil
+_G.__FMC_CamRotCurrent = nil
 _G.__FMC_SessionId = nil
 pcall(function()
     local cam = workspace.CurrentCamera
@@ -1178,8 +1189,9 @@ end)
 
 _G.__FMC_Keys = _G.__FMC_Keys or {}
 _G.__FMC_Active = true
-_G.__FMC_CamQueue = {}
-_G.__FMC_CamSeq = 0
+_G.__FMC_CamRot = nil
+_G.__FMC_CamDist = nil
+_G.__FMC_CamRotCurrent = nil
 _G.__FMC_SessionId = '%s'
 
 if _G.__FMC_LoopConn then pcall(function() _G.__FMC_LoopConn:Disconnect() end) end
@@ -1219,38 +1231,19 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
     end
 
     if hrp and cam then
-        local q = _G.__FMC_CamQueue
-        if q and #q > 0 then
-            local delay = 0.06
-            local tt = os.clock() - delay
-            while #q > 2 and q[2].t < tt do table.remove(q, 1) end
-
-            local a, b
-            for i = 1, #q - 1 do
-                if q[i].t <= tt and q[i + 1].t >= tt then
-                    a = q[i]; b = q[i + 1]; break
-                end
+        local rot = _G.__FMC_CamRot
+        local dist = _G.__FMC_CamDist
+        if rot and dist then
+            local currentRot = _G.__FMC_CamRotCurrent
+            if not currentRot then
+                currentRot = rot
+            else
+                currentRot = currentRot:Lerp(rot, math.clamp(dt * 40, 0, 1))
             end
-            if not a then
-                if tt >= q[#q].t then
-                    a = q[#q]; b = q[#q]
-                else
-                    a = q[1]; b = q[1]
-                end
-            end
-
-            local cur
-            if a and b and b.t > a.t then
-                local alpha = math.clamp((tt - a.t) / (b.t - a.t), 0, 1)
-                cur = a.cf:Lerp(b.cf, alpha)
-            elseif a then
-                cur = a.cf
-            end
-
-            if cur then
-                cam.CameraType = Enum.CameraType.Scriptable
-                cam.CFrame = CFrame.new(hrp.Position + cur.Position) * cur.Rotation
-            end
+            _G.__FMC_CamRotCurrent = currentRot
+            cam.CameraType = Enum.CameraType.Scriptable
+            local camPos = hrp.Position - currentRot.LookVector * dist
+            cam.CFrame = CFrame.new(camPos) * currentRot
         end
     end
 end)
@@ -1262,8 +1255,9 @@ local function buildFMCDeactivateCode()
 local plr = game:GetService("Players").LocalPlayer
 _G.__FMC_Active = false
 _G.__FMC_Keys = {}
-_G.__FMC_CamQueue = nil
-_G.__FMC_CamSeq = 0
+_G.__FMC_CamRot = nil
+_G.__FMC_CamDist = nil
+_G.__FMC_CamRotCurrent = nil
 _G.__FMC_SessionId = nil
 
 if _G.__FMC_LoopConn then
@@ -1468,11 +1462,13 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
         end
 
         local now = os.clock()
-        if now - remoteControl.lastCamSend < 0.02 then return end
+        if now - remoteControl.lastCamSend < 0.015 then return end
         remoteControl.lastCamSend = now
         remoteControl.camSeq = remoteControl.camSeq + 1
-        local offset = cam.CFrame - anchorPos
-        dispatchRawCode(targets, buildCameraCode(offset, remoteControl.camSeq, remoteControl.sessionId))
+        
+        local rot = cam.CFrame.Rotation
+        local dist = (cam.CFrame.Position - anchorPos).Magnitude
+        dispatchRawCode(targets, buildCameraCode(rot, dist, remoteControl.sessionId))
     end)
     table.insert(remoteControl.connections, camConn)
 
