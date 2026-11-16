@@ -1,4 +1,3 @@
---123132
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -8,6 +7,7 @@ local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TeleportService  = game:GetService("TeleportService")
 local TextService      = game:GetService("TextService")
+local RunService       = game:GetService("RunService")
 
 local player     = Players.LocalPlayer
 local playerName = player.DisplayName or player.Name
@@ -148,19 +148,25 @@ local function aToggleButton(parent, text, size, callback)
     aCorner(knob, 6)
 
     local state = false
-    btn.MouseButton1Click:Connect(function()
-        local newState = not state
-        if callback then
-            local result = callback(newState)
-            if result == false then return end
-        end
-        state = newState
+    local api = {}
+    function api.setState(v)
+        state = v
         TweenService:Create(track, TweenInfo.new(0.2), {
             BackgroundColor3 = state and ADMIN_GREEN or Color3.fromRGB(30, 22, 28),
         }):Play()
         TweenService:Create(knob, TweenInfo.new(0.2), {
             Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
         }):Play()
+    end
+    function api.getState() return state end
+
+    btn.MouseButton1Click:Connect(function()
+        local newState = not state
+        if callback then
+            local result = callback(newState)
+            if result == false then return end
+        end
+        api.setState(newState)
     end)
 
     btn.MouseEnter:Connect(function()
@@ -173,7 +179,7 @@ local function aToggleButton(parent, text, size, callback)
             TweenService:Create(btn, TweenInfo.new(0.15), { BackgroundColor3 = ADMIN_GRAY }):Play()
         end
     end)
-    return btn
+    return btn, api
 end
 
 local function aInput(parent, placeholder, size)
@@ -431,6 +437,9 @@ end
         local text = escapeLuaSingle(payload.text or "")
         return ([[
 local text = '%s'
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 local sg = Instance.new("ScreenGui")
 sg.Name = "AdminCenterText"
 sg.IgnoreGuiInset = true
@@ -445,7 +454,7 @@ if not ok then
 end
 if not ok then
     ok = pcall(function()
-        sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui", 2)
+        sg.Parent = player:WaitForChild("PlayerGui", 2)
     end)
 end
 if sg.Parent then
@@ -459,13 +468,25 @@ if sg.Parent then
     lbl.Font = Enum.Font.GothamBold
     lbl.TextScaled = true
     lbl.TextWrapped = true
-    lbl.TextStrokeTransparency = 0
+    lbl.TextStrokeTransparency = 1
     lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    lbl.TextTransparency = 1
     lbl.Parent = sg
+    task.spawn(function()
+        local fadeIn = TweenService:Create(lbl, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TextTransparency = 0, TextStrokeTransparency = 0,
+        })
+        fadeIn:Play()
+        fadeIn.Completed:Wait()
+        task.wait(1.3)
+        local fadeOut = TweenService:Create(lbl, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            TextTransparency = 1, TextStrokeTransparency = 1,
+        })
+        fadeOut:Play()
+        fadeOut.Completed:Wait()
+        pcall(function() sg:Destroy() end)
+    end)
 end
-task.delay(2, function()
-    pcall(function() if sg then sg:Destroy() end end)
-end)
 ]]):format(text)
     elseif cmdType == "chat_text" then
         local text = escapeLuaSingle(payload.text or "")
@@ -518,17 +539,66 @@ if hum then
 end
 ]]):format(state)
     elseif cmdType == "invis" then
-        local transp = payload.state and "1" or "0"
-        return ([[
+        local state = payload.state
+        if state then
+            return [[
 local plr = game:GetService("Players").LocalPlayer
-if plr and plr.Character then
-    for _, v in ipairs(plr.Character:GetDescendants()) do
-        if v:IsA("BasePart") or v:IsA("Decal") then
-            v.Transparency = %s
-        end
+if not plr or not plr.Character then return end
+local char = plr.Character
+local key = "__admin_invis_orig"
+if char:GetAttribute(key) then return end
+local saved = {}
+for _, v in ipairs(char:GetDescendants()) do
+    if v:IsA("BasePart") then
+        saved[v] = { kind = "part", val = v.Transparency }
+        v.Transparency = 1
+        v.CanCollide = false
+    elseif v:IsA("Decal") then
+        saved[v] = { kind = "decal", val = v.Transparency }
+        v.Transparency = 1
+    elseif v:IsA("Highlight") then
+        saved[v] = { kind = "highlight", val = v.Enabled }
+        pcall(function() v.Enabled = false end)
+    elseif v:IsA("SelectionBox") or v:IsA("BoxHandleAdornment") then
+        saved[v] = { kind = "adorn", val = v.Visible }
+        pcall(function() v.Visible = false end)
+    elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
+        saved[v] = { kind = "gui", val = v.Enabled }
+        pcall(function() v.Enabled = false end)
     end
 end
-]]):format(transp)
+_G.__adminInvisSaved = _G.__adminInvisSaved or {}
+_G.__adminInvisSaved[char] = saved
+char:SetAttribute(key, true)
+]]
+        else
+            return [[
+local plr = game:GetService("Players").LocalPlayer
+if not plr or not plr.Character then return end
+local char = plr.Character
+local key = "__admin_invis_orig"
+if not char:GetAttribute(key) then return end
+local saved = _G.__adminInvisSaved and _G.__adminInvisSaved[char]
+if saved then
+    for inst, info in pairs(saved) do
+        pcall(function()
+            if info.kind == "part" or info.kind == "decal" then
+                inst.Transparency = info.val
+                if info.kind == "part" then inst.CanCollide = true end
+            elseif info.kind == "highlight" then
+                inst.Enabled = info.val
+            elseif info.kind == "adorn" then
+                inst.Visible = info.val
+            elseif info.kind == "gui" then
+                inst.Enabled = info.val
+            end
+        end)
+    end
+    _G.__adminInvisSaved[char] = nil
+end
+char:SetAttribute(key, nil)
+]]
+        end
     end
     return ""
 end
@@ -552,8 +622,7 @@ local function dispatchCommand(targets, cmdType, payload)
             local ids = {}
             for _, p in ipairs(list) do
                 local pId = p.id
-                local pUid = tonumber(p.userId)
-                if pId and pId ~= clientId and pUid ~= player.UserId then
+                if pId then
                     table.insert(ids, pId)
                 end
             end
@@ -565,6 +634,103 @@ local function dispatchCommand(targets, cmdType, payload)
         body.all = false
         adminHttpPost(SERVER_URL .. "/cmd", body)
     end)
+end
+
+local function dispatchRawCode(targets, code)
+    if not code or code == "" then return end
+    if not targets or #targets == 0 then return end
+    task.spawn(function()
+        local body = {
+            hwid = currentHwid(), type = "exec_code",
+            payload = { code = code },
+            gameId = gameIdStr, placeId = placeIdStr,
+            targets = targets, all = false,
+        }
+        adminHttpPost(SERVER_URL .. "/cmd", body)
+    end)
+end
+
+local function buildInputCode(action, keyName)
+    if action == "keydown" and keyName then
+        return string.format([[
+pcall(function()
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendKeyEvent(true, Enum.KeyCode.%s, false, game)
+end)
+if typeof(keypress) == "function" then pcall(function() keypress(Enum.KeyCode.%s) end) end
+]], keyName, keyName)
+    elseif action == "keyup" and keyName then
+        return string.format([[
+pcall(function()
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendKeyEvent(false, Enum.KeyCode.%s, false, game)
+end)
+if typeof(keyrelease) == "function" then pcall(function() keyrelease(Enum.KeyCode.%s) end) end
+]], keyName, keyName)
+    elseif action == "mouse1down" then
+        return [[
+pcall(function()
+    local cam = workspace.CurrentCamera
+    local pos = cam.ViewportSize
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendMouseButtonEvent(pos.X/2, pos.Y/2, 0, true, game, 0)
+end)
+if typeof(mouse1press) == "function" then pcall(mouse1press) end
+]]
+    elseif action == "mouse1up" then
+        return [[
+pcall(function()
+    local cam = workspace.CurrentCamera
+    local pos = cam.ViewportSize
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendMouseButtonEvent(pos.X/2, pos.Y/2, 0, false, game, 0)
+end)
+if typeof(mouse1release) == "function" then pcall(mouse1release) end
+]]
+    elseif action == "mouse2down" then
+        return [[
+pcall(function()
+    local cam = workspace.CurrentCamera
+    local pos = cam.ViewportSize
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendMouseButtonEvent(pos.X/2, pos.Y/2, 1, true, game, 0)
+end)
+if typeof(mouse2press) == "function" then pcall(mouse2press) end
+]]
+    elseif action == "mouse2up" then
+        return [[
+pcall(function()
+    local cam = workspace.CurrentCamera
+    local pos = cam.ViewportSize
+    local VIM = game:GetService("VirtualInputManager")
+    VIM:SendMouseButtonEvent(pos.X/2, pos.Y/2, 1, false, game, 0)
+end)
+if typeof(mouse2release) == "function" then pcall(mouse2release) end
+]]
+    end
+    return nil
+end
+
+local function buildCameraCode(cf)
+    local p, lx, ly, lz, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
+    return string.format([[
+pcall(function()
+    local cam = workspace.CurrentCamera
+    if cam then
+        cam.CameraType = Enum.CameraType.Scriptable
+        cam.CFrame = CFrame.new(%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f)
+    end
+end)
+]], p.X, p.Y, p.Z, r00, r01, r02, r10, r11, r12, r20, r21, r22)
+end
+
+local function buildCameraRestoreCode()
+    return [[
+pcall(function()
+    local cam = workspace.CurrentCamera
+    if cam then cam.CameraType = Enum.CameraType.Custom end
+end)
+]]
 end
 
 local function hopToServer(targetPlaceId, targetJobId)
@@ -978,10 +1144,109 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
     return box, container, updatePlaceholder, self
 end
 
-local panelRef = { sg = nil, main = nil, scale = nil }
+local panelRef = { sg = nil, main = nil, scale = nil, onClose = nil }
 local dragConn = nil
 local endConn = nil
 local specConn = nil
+
+local remoteControl = {
+    active = false,
+    spectateOnly = false,
+    targets = nil,
+    targetPlayer = nil,
+    connections = {},
+    lastCamSend = 0,
+    cameraRestored = false,
+}
+
+local function stopRemoteControl(restoreCamera)
+    for _, c in ipairs(remoteControl.connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    remoteControl.connections = {}
+    if remoteControl.active and remoteControl.targets and not remoteControl.cameraRestored then
+        dispatchRawCode(remoteControl.targets, buildCameraRestoreCode())
+        remoteControl.cameraRestored = true
+    end
+    remoteControl.active = false
+    remoteControl.spectateOnly = false
+    remoteControl.targets = nil
+    remoteControl.targetPlayer = nil
+    if restoreCamera and player.Character then
+        local myHum = player.Character:FindFirstChildOfClass("Humanoid")
+        if myHum then workspace.CurrentCamera.CameraSubject = myHum end
+    end
+end
+
+local function startRemoteControl(targets, targetPlayer, spectateOnly)
+    stopRemoteControl(true)
+    if not targets or #targets == 0 then return false end
+    remoteControl.active = true
+    remoteControl.spectateOnly = spectateOnly
+    remoteControl.targets = targets
+    remoteControl.targetPlayer = targetPlayer
+    remoteControl.cameraRestored = false
+    remoteControl.lastCamSend = 0
+
+    if targetPlayer and targetPlayer.Character then
+        local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            workspace.CurrentCamera.CameraSubject = hum
+            if specConn then specConn:Disconnect() end
+            specConn = targetPlayer.CharacterAdded:Connect(function()
+                task.wait(0.2)
+                if targetPlayer.Character and remoteControl.active then
+                    local h = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if h then workspace.CurrentCamera.CameraSubject = h end
+                end
+            end)
+        end
+    end
+
+    if not spectateOnly then
+        local function onInputBegan(inp, gp)
+            if gp then return end
+            if inp.UserInputType == Enum.UserInputType.Keyboard then
+                local k = inp.KeyCode.Name
+                if k ~= "Unknown" then
+                    dispatchRawCode(targets, buildInputCode("keydown", k))
+                end
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                dispatchRawCode(targets, buildInputCode("mouse1down"))
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
+                dispatchRawCode(targets, buildInputCode("mouse2down"))
+            end
+        end
+        local function onInputEnded(inp, gp)
+            if gp then return end
+            if inp.UserInputType == Enum.UserInputType.Keyboard then
+                local k = inp.KeyCode.Name
+                if k ~= "Unknown" then
+                    dispatchRawCode(targets, buildInputCode("keyup", k))
+                end
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                dispatchRawCode(targets, buildInputCode("mouse1up"))
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
+                dispatchRawCode(targets, buildInputCode("mouse2up"))
+            end
+        end
+        table.insert(remoteControl.connections, UserInputService.InputBegan:Connect(onInputBegan))
+        table.insert(remoteControl.connections, UserInputService.InputEnded:Connect(onInputEnded))
+    end
+
+    local camConn = RunService.RenderStepped:Connect(function()
+        if not remoteControl.active then return end
+        local now = os.clock()
+        if now - remoteControl.lastCamSend < 0.15 then return end
+        remoteControl.lastCamSend = now
+        local cam = workspace.CurrentCamera
+        if cam then
+            dispatchRawCode(targets, buildCameraCode(cam.CFrame))
+        end
+    end)
+    table.insert(remoteControl.connections, camConn)
+    return true
+end
 
 local function closeAllDropdowns()
     local snapshot = {}
@@ -995,6 +1260,7 @@ end
 
 local function animateClose(afterClose)
     if not panelRef.sg or not panelRef.scale then
+        if panelRef.onClose then pcall(panelRef.onClose) end
         if afterClose then afterClose() end
         return
     end
@@ -1004,6 +1270,7 @@ local function animateClose(afterClose)
     task.delay(0.2, function()
         if ref.sg then ref.sg.Enabled = false end
         if ref.scale and ref.scale.Parent then ref.scale.Scale = 1 end
+        if ref.onClose then pcall(ref.onClose) end
         if afterClose then pcall(afterClose) end
     end)
 end
@@ -1067,6 +1334,9 @@ function buildAdminPanel()
     panelRef.sg = sg
     panelRef.main = main
     panelRef.scale = uiScale
+    panelRef.onClose = function()
+        stopRemoteControl(true)
+    end
 
     local header = aNew("Frame", {
         Size = UDim2.new(1, 0, 0, 52),
@@ -1096,6 +1366,7 @@ function buildAdminPanel()
             panelRef.scale = nil
             if dragConn then dragConn:Disconnect(); dragConn = nil end
             if endConn then endConn:Disconnect(); endConn = nil end
+            if specConn then specConn:Disconnect(); specConn = nil end
         end)
     end)
     closeBtn.Position = UDim2.new(1, -36, 0.5, -14)
@@ -1184,14 +1455,20 @@ function buildAdminPanel()
         return ids
     end
 
-    local function getFirstSelectedUserId()
+    local function getFirstLocalSelectedPlayer()
         for _, p in pairs(serverSel) do
             local u = tonumber(p.userId)
-            if u then return u end
+            if u then
+                local pl = Players:GetPlayerByUserId(u)
+                if pl then return pl end
+            end
         end
         for _, p in pairs(allSel) do
             local u = tonumber(p.userId)
-            if u then return u end
+            if u then
+                local pl = Players:GetPlayerByUserId(u)
+                if pl then return pl end
+            end
         end
         return nil
     end
@@ -1277,68 +1554,81 @@ function buildAdminPanel()
 
     local freezeToggle = aToggleButton(rightCol, "Freeze", UDim2.new(1, 0, 0, 30), function(state)
         local ids = getAllSelectedIds()
-        if #ids == 0 then return end
+        if #ids == 0 then return false end
         dispatchCommand(ids, "freeze", { state = state })
     end)
     freezeToggle.Position = UDim2.new(0, 0, 0, 30)
 
     local invisToggle = aToggleButton(rightCol, "Invisible", UDim2.new(1, 0, 0, 30), function(state)
         local ids = getAllSelectedIds()
-        if #ids == 0 then return end
+        if #ids == 0 then return false end
         dispatchCommand(ids, "invis", { state = state })
     end)
     invisToggle.Position = UDim2.new(0, 0, 0, 66)
 
-    local spectateToggle = aToggleButton(rightCol, "Spectate", UDim2.new(1, 0, 0, 30), function(state)
+    local spectateToggle, spectateAPI = aToggleButton(rightCol, "Spectate", UDim2.new(1, 0, 0, 30), function(state)
         if state then
-            local targetUid = getFirstSelectedUserId()
-            if not targetUid then return false end
-            local target = Players:GetPlayerByUserId(targetUid)
-            if not target then return false end
-            local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
-            if not hum then return false end
-            workspace.CurrentCamera.CameraSubject = hum
-
-            if specConn then specConn:Disconnect() end
-            specConn = target.CharacterAdded:Connect(function()
-                task.wait(0.2)
-                if target.Character then
-                    local h = target.Character:FindFirstChildOfClass("Humanoid")
-                    if h then workspace.CurrentCamera.CameraSubject = h end
-                end
-            end)
+            local ids = getAllSelectedIds()
+            if #ids == 0 then return false end
+            local targetPlayer = getFirstLocalSelectedPlayer()
+            if not targetPlayer or not targetPlayer.Character then return false end
+            local ok = startRemoteControl(ids, targetPlayer, true)
+            if not ok then return false end
             return true
         else
-            if specConn then specConn:Disconnect(); specConn = nil end
-            if player.Character then
-                local myHum = player.Character:FindFirstChildOfClass("Humanoid")
-                if myHum then workspace.CurrentCamera.CameraSubject = myHum end
+            if not remoteControl.spectateOnly then
+                return true
             end
+            stopRemoteControl(true)
             return true
         end
     end)
     spectateToggle.Position = UDim2.new(0, 0, 0, 102)
+
+    local fullControlToggle, fullControlAPI = aToggleButton(rightCol, "Full movement control", UDim2.new(1, 0, 0, 30), function(state)
+        if state then
+            local ids = getAllSelectedIds()
+            if #ids == 0 then return false end
+            local targetPlayer = getFirstLocalSelectedPlayer()
+            local ok = startRemoteControl(ids, targetPlayer, false)
+            if not ok then return false end
+            if spectateAPI and not spectateAPI.getState() then
+                spectateAPI.setState(true)
+            end
+            return true
+        else
+            if remoteControl.spectateOnly then
+                return true
+            end
+            stopRemoteControl(true)
+            if spectateAPI and spectateAPI.getState() then
+                spectateAPI.setState(false)
+            end
+            return true
+        end
+    end)
+    fullControlToggle.Position = UDim2.new(0, 0, 0, 138)
 
     local killBtn = aButton(rightCol, "Kill", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
         local ids = getAllSelectedIds()
         if #ids == 0 then return end
         dispatchCommand(ids, "kill", {})
     end)
-    killBtn.Position = UDim2.new(0, 0, 0, 142)
+    killBtn.Position = UDim2.new(0, 0, 0, 178)
 
     local explodeBtn = aButton(rightCol, "Explode", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
         local ids = getAllSelectedIds()
         if #ids == 0 then return end
         dispatchCommand(ids, "explode", {})
     end)
-    explodeBtn.Position = UDim2.new(0, 0, 0, 180)
+    explodeBtn.Position = UDim2.new(0, 0, 0, 216)
 
     local crashBtn = aButton(rightCol, "Crash user", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
         local ids = getAllSelectedIds()
         if #ids == 0 then return end
         dispatchCommand(ids, "crash", {})
     end)
-    crashBtn.Position = UDim2.new(0, 0, 0, 218)
+    crashBtn.Position = UDim2.new(0, 0, 0, 254)
 
     local allPanel = aNew("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false }, content)
     tabs["All Users"] = allPanel
