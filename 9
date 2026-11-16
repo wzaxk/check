@@ -284,7 +284,7 @@ local function dedupePlayers(list)
     return out
 end
 
-local usersCache = { list = {}, at = 0, fetching = false, onUpdate = {} }
+local usersCache = { list = {}, at = 0, fetching = false }
 local USERS_TTL = 8
 
 local function notifyDropdowns()
@@ -302,26 +302,20 @@ local function fetchUsersIntoCache()
     if data and data.players then
         usersCache.list = dedupePlayers(data.players)
         usersCache.at = os.clock()
-        
-        task.spawn(function()
-            local updated = false
-            for _, p in ipairs(usersCache.list) do
-                local uid = tonumber(p.userId)
-                if uid and not usernameFallbackCache[uid] and not usernameFetching[uid] then
-                    usernameFetching[uid] = true
+        for _, p in ipairs(usersCache.list) do
+            local uid = tonumber(p.userId)
+            if uid and not usernameFallbackCache[uid] and not usernameFetching[uid] then
+                usernameFetching[uid] = true
+                task.spawn(function()
                     local ok, n = pcall(function() return Players:GetNameFromUserIdAsync(uid) end)
                     usernameFetching[uid] = nil
                     if ok and n then
                         usernameFallbackCache[uid] = n
-                        updated = true
+                        notifyDropdowns()
                     end
-                end
+                end)
             end
-            if updated then
-                notifyDropdowns()
-            end
-            for _, cb in ipairs(usersCache.onUpdate) do cb() end
-        end)
+        end
     end
 end
 
@@ -762,7 +756,6 @@ local function buildCameraRestoreCode()
 _G.__FMC_CamRot = nil
 _G.__FMC_CamDist = nil
 _G.__FMC_CamRotCurrent = nil
-_G.__FMC_CamDistCurrent = nil
 _G.__FMC_SessionId = nil
 pcall(function()
     local cam = workspace.CurrentCamera
@@ -1199,7 +1192,6 @@ _G.__FMC_Active = true
 _G.__FMC_CamRot = nil
 _G.__FMC_CamDist = nil
 _G.__FMC_CamRotCurrent = nil
-_G.__FMC_CamDistCurrent = nil
 _G.__FMC_SessionId = '%s'
 
 if _G.__FMC_LoopConn then pcall(function() _G.__FMC_LoopConn:Disconnect() end) end
@@ -1246,20 +1238,11 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
             if not currentRot then
                 currentRot = rot
             else
-                currentRot = currentRot:Lerp(rot, math.clamp(dt * 30, 0, 1))
+                currentRot = currentRot:Lerp(rot, math.clamp(dt * 40, 0, 1))
             end
             _G.__FMC_CamRotCurrent = currentRot
-            
-            local currentDist = _G.__FMC_CamDistCurrent
-            if not currentDist then
-                currentDist = dist
-            else
-                currentDist = currentDist + (dist - currentDist) * math.clamp(dt * 10, 0, 1)
-            end
-            _G.__FMC_CamDistCurrent = currentDist
-            
             cam.CameraType = Enum.CameraType.Scriptable
-            local camPos = hrp.Position - currentRot.LookVector * currentDist
+            local camPos = hrp.Position - currentRot.LookVector * dist
             cam.CFrame = CFrame.new(camPos) * currentRot
         end
     end
@@ -1275,7 +1258,6 @@ _G.__FMC_Keys = {}
 _G.__FMC_CamRot = nil
 _G.__FMC_CamDist = nil
 _G.__FMC_CamRotCurrent = nil
-_G.__FMC_CamDistCurrent = nil
 _G.__FMC_SessionId = nil
 
 if _G.__FMC_LoopConn then
@@ -1473,24 +1455,19 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
         local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
         if not myHRP then return end
 
+        local anchorPos = myHRP.Position
+        if targetPlayer and targetPlayer.Character then
+            local tHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if tHRP then anchorPos = tHRP.Position end
+        end
+
         local now = os.clock()
         if now - remoteControl.lastCamSend < 0.015 then return end
         remoteControl.lastCamSend = now
         remoteControl.camSeq = remoteControl.camSeq + 1
         
         local rot = cam.CFrame.Rotation
-        local dist = 12
-        
-        if isLocalTarget and targetPlayer and targetPlayer.Character then
-            local tHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if tHRP then
-                dist = (cam.CFrame.Position - tHRP.Position).Magnitude
-            end
-        else
-            dist = (cam.CFrame.Position - myHRP.Position).Magnitude
-        end
-        dist = math.clamp(dist, 1, 50)
-        
+        local dist = (cam.CFrame.Position - anchorPos).Magnitude
         dispatchRawCode(targets, buildCameraCode(rot, dist, remoteControl.sessionId))
     end)
     table.insert(remoteControl.connections, camConn)
@@ -1694,31 +1671,6 @@ function buildAdminPanel()
     local serverSel = {}
     local allSel = {}
 
-    local function syncSelection(selectionState)
-        if not selectionState or next(selectionState) == nil then return end
-        local byUid = {}
-        for _, p in ipairs(usersCache.list) do
-            local uid = tonumber(p.userId)
-            if uid then byUid[uid] = p end
-        end
-        local toRemove = {}
-        for id, p in pairs(selectionState) do
-            local uid = tonumber(p.userId)
-            if uid and byUid[uid] then
-                local newP = byUid[uid]
-                if newP.id ~= id then
-                    table.insert(toRemove, id)
-                    selectionState[newP.id] = newP
-                else
-                    selectionState[id] = newP
-                end
-            end
-        end
-        for _, id in ipairs(toRemove) do
-            selectionState[id] = nil
-        end
-    end
-
     local function getAllSelectedIds()
         local ids, seen = {}, {}
         for id in pairs(serverSel) do
@@ -1757,18 +1709,9 @@ function buildAdminPanel()
     local allDrop, allDropFrame, allUpdate, allDD
 
     local function refreshSelLabels()
-        syncSelection(serverSel)
-        syncSelection(allSel)
         if serverUpdate then serverUpdate() end
         if allUpdate then allUpdate() end
     end
-
-    table.insert(usersCache.onUpdate, function()
-        syncSelection(serverSel)
-        syncSelection(allSel)
-        if serverUpdate then serverUpdate() end
-        if allUpdate then allUpdate() end
-    end)
 
     serverDrop, serverDropFrame, serverUpdate, serverDD = aDropdown(
         leftCol, "On my server",
@@ -1807,7 +1750,6 @@ function buildAdminPanel()
         local ids = getAllSelectedIds()
         if #ids == 0 then return end
         dispatchCommand(ids, "show_text", { text = textInput.Text })
-        textInput.Text = ""
     end)
     showBtn.Position = UDim2.new(0, 0, 0, 114)
 
@@ -1815,7 +1757,6 @@ function buildAdminPanel()
         local ids = getAllSelectedIds()
         if #ids == 0 then return end
         dispatchCommand(ids, "chat_text", { text = textInput.Text })
-        textInput.Text = ""
     end)
     chatBtn.Position = UDim2.new(0.5, 4, 0, 114)
 
@@ -1926,13 +1867,11 @@ function buildAdminPanel()
 
     local allShowBtn = aButton(allLeft, "Show centered text", UDim2.new(0.5, -4, 0, 30), ADMIN_GRAY, function()
         dispatchCommand(nil, "show_text", { text = allTextInput.Text })
-        allTextInput.Text = ""
     end)
     allShowBtn.Position = UDim2.new(0, 0, 0, 42)
 
     local allChatBtn = aButton(allLeft, "Send to chat", UDim2.new(0.5, -4, 0, 30), ADMIN_GRAY, function()
         dispatchCommand(nil, "chat_text", { text = allTextInput.Text })
-        allTextInput.Text = ""
     end)
     allChatBtn.Position = UDim2.new(0.5, 4, 0, 42)
 
