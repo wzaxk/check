@@ -1327,29 +1327,58 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
             if gp then return end
             if inp.UserInputType == Enum.UserInputType.Keyboard then
                 local name = keyMap[inp.KeyCode]
-                if name then sendKey(name, true) end
+                if name then
+                    sendKey(name, true)
+                else
+                    local k = inp.KeyCode.Name
+                    if k ~= "Unknown" then
+                        dispatchRawCode(targets, buildInputCode("keydown", k))
+                    end
+                end
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                dispatchRawCode(targets, buildInputCode("mouse1down"))
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
+                dispatchRawCode(targets, buildInputCode("mouse2down"))
             end
         end
         local function onInputEnded(inp, gp)
             if gp then return end
             if inp.UserInputType == Enum.UserInputType.Keyboard then
                 local name = keyMap[inp.KeyCode]
-                if name then sendKey(name, false) end
+                if name then
+                    sendKey(name, false)
+                else
+                    local k = inp.KeyCode.Name
+                    if k ~= "Unknown" then
+                        dispatchRawCode(targets, buildInputCode("keyup", k))
+                    end
+                end
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                dispatchRawCode(targets, buildInputCode("mouse1up"))
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
+                dispatchRawCode(targets, buildInputCode("mouse2up"))
             end
         end
         table.insert(remoteControl.connections, UserInputService.InputBegan:Connect(onInputBegan))
         table.insert(remoteControl.connections, UserInputService.InputEnded:Connect(onInputEnded))
     end
 
+    local lastCamCF = nil
     local camConn = RunService.RenderStepped:Connect(function()
         if not remoteControl.active then return end
-        local now = os.clock()
-        if now - remoteControl.lastCamSend < 0.15 then return end
-        remoteControl.lastCamSend = now
         local cam = workspace.CurrentCamera
-        if cam then
-            dispatchRawCode(targets, buildCameraCode(cam.CFrame))
+        if not cam then return end
+        local cf = cam.CFrame
+        if lastCamCF then
+            local posDelta = (cf.Position - lastCamCF.Position).Magnitude
+            local rotDot = cf.LookVector:Dot(lastCamCF.LookVector)
+            if posDelta < 0.01 and rotDot > 0.9999 then return end
         end
+        local now = os.clock()
+        if now - remoteControl.lastCamSend < 0.03 then return end
+        remoteControl.lastCamSend = now
+        lastCamCF = cf
+        dispatchRawCode(targets, buildCameraCode(cf))
     end)
     table.insert(remoteControl.connections, camConn)
 
@@ -1366,9 +1395,9 @@ local function closeAllDropdowns()
     end
 end
 
-local function animateClose(afterClose)
+local function animateClose(afterClose, keepRemoteControl)
     if not panelRef.sg or not panelRef.scale then
-        if panelRef.onClose then pcall(panelRef.onClose) end
+        if not keepRemoteControl and panelRef.onClose then pcall(panelRef.onClose) end
         if afterClose then afterClose() end
         return
     end
@@ -1378,7 +1407,7 @@ local function animateClose(afterClose)
     task.delay(0.2, function()
         if ref.sg then ref.sg.Enabled = false end
         if ref.scale and ref.scale.Parent then ref.scale.Scale = 1 end
-        if ref.onClose then pcall(ref.onClose) end
+        if not keepRemoteControl and ref.onClose then pcall(ref.onClose) end
         if afterClose then pcall(afterClose) end
     end)
 end
@@ -1887,7 +1916,7 @@ UserInputService.InputBegan:Connect(function(inp, processed)
         if isOwnerHwid then
             if panelRef.sg and panelRef.sg.Parent then
                 if panelRef.sg.Enabled then
-                    animateClose()
+                    animateClose(nil, true)
                 else
                     animateOpen()
                 end
