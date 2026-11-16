@@ -1,4 +1,4 @@
---18
+--10
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -712,21 +712,17 @@ if typeof(mouse2release) == "function" then pcall(mouse2release) end
     return nil
 end
 
-local function buildCameraCode(cf)
-    local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = cf:GetComponents()
+local function buildCameraCode(offsetCF)
+    local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = offsetCF:GetComponents()
     return string.format([[
-pcall(function()
-    local cam = workspace.CurrentCamera
-    if cam then
-        cam.CameraType = Enum.CameraType.Scriptable
-        cam.CFrame = CFrame.new(%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f)
-    end
-end)
+_G.__FMC_CamTarget = CFrame.new(%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f)
 ]], x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22)
 end
 
 local function buildCameraRestoreCode()
     return [[
+_G.__FMC_CamTarget = nil
+_G.__FMC_CamCurrent = nil
 pcall(function()
     local cam = workspace.CurrentCamera
     if cam then cam.CameraType = Enum.CameraType.Custom end
@@ -1161,16 +1157,19 @@ end)
 
 _G.__FMC_Keys = _G.__FMC_Keys or {}
 _G.__FMC_Active = true
+_G.__FMC_CamTarget = nil
+_G.__FMC_CamCurrent = nil
 
 if _G.__FMC_LoopConn then pcall(function() _G.__FMC_LoopConn:Disconnect() end) end
 
 local RS = game:GetService("RunService")
-_G.__FMC_LoopConn = RS.RenderStepped:Connect(function()
+_G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
     if not _G.__FMC_Active then return end
     local char = plr.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
 
     local keys = _G.__FMC_Keys or {}
     local x, z = 0, 0
@@ -1196,6 +1195,21 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function()
     if keys.Space then
         hum.Jump = true
     end
+
+    if hrp and cam then
+        local target = _G.__FMC_CamTarget
+        if target then
+            local current = _G.__FMC_CamCurrent
+            if not current then
+                current = target
+            else
+                current = current:Lerp(target, math.clamp(dt * 18, 0, 1))
+            end
+            _G.__FMC_CamCurrent = current
+            cam.CameraType = Enum.CameraType.Scriptable
+            cam.CFrame = hrp.CFrame * current
+        end
+    end
 end)
 ]]
 end
@@ -1205,6 +1219,8 @@ local function buildFMCDeactivateCode()
 local plr = game:GetService("Players").LocalPlayer
 _G.__FMC_Active = false
 _G.__FMC_Keys = {}
+_G.__FMC_CamTarget = nil
+_G.__FMC_CamCurrent = nil
 
 if _G.__FMC_LoopConn then
     pcall(function() _G.__FMC_LoopConn:Disconnect() end)
@@ -1251,6 +1267,8 @@ local function stopRemoteControl(restoreCamera)
         end
     end
 
+    local wasSpectate = remoteControl.spectateOnly
+
     remoteControl.active = false
     remoteControl.spectateOnly = false
     remoteControl.targets = nil
@@ -1261,7 +1279,7 @@ local function stopRemoteControl(restoreCamera)
         if hrp then hrp.Anchored = false end
     end
 
-    if restoreCamera and player.Character then
+    if restoreCamera and wasSpectate and player.Character then
         local myHum = player.Character:FindFirstChildOfClass("Humanoid")
         if myHum then workspace.CurrentCamera.CameraSubject = myHum end
     end
@@ -1278,14 +1296,14 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
     remoteControl.cameraRestored = false
     remoteControl.lastCamSend = 0
 
-    if targetPlayer and targetPlayer.Character then
+    if spectateOnly and targetPlayer and targetPlayer.Character then
         local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then
             workspace.CurrentCamera.CameraSubject = hum
             if specConn then specConn:Disconnect() end
             specConn = targetPlayer.CharacterAdded:Connect(function()
                 task.wait(0.2)
-                if targetPlayer.Character and remoteControl.active then
+                if targetPlayer.Character and remoteControl.active and remoteControl.spectateOnly then
                     local h = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
                     if h then workspace.CurrentCamera.CameraSubject = h end
                 end
@@ -1367,10 +1385,14 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
         if not remoteControl.active then return end
         local cam = workspace.CurrentCamera
         if not cam then return end
+        local myChar = player.Character
+        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if not myHRP then return end
         local now = os.clock()
-        if now - remoteControl.lastCamSend < 0.03 then return end
+        if now - remoteControl.lastCamSend < 0.025 then return end
         remoteControl.lastCamSend = now
-        dispatchRawCode(targets, buildCameraCode(cam.CFrame))
+        local offset = cam.CFrame * myHRP.CFrame:Inverse()
+        dispatchRawCode(targets, buildCameraCode(offset))
     end)
     table.insert(remoteControl.connections, camConn)
 
