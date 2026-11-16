@@ -1,4 +1,3 @@
---1
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -277,23 +276,48 @@ local usersCache = { list = {}, at = 0, fetching = false }
 local USERS_TTL = 10
 
 local function notifyDropdowns()
+    local snapshot = {}
     for _, dd in ipairs(allDropdowns) do
+        table.insert(snapshot, dd)
+    end
+    for _, dd in ipairs(snapshot) do
         if dd.refreshPlaceholder then pcall(dd.refreshPlaceholder) end
     end
 end
 
+local function prefetchUsers()
+    if not httpRequest then return end
+    if usersCache.at > 0 or usersCache.fetching then return end
+    usersCache.fetching = true
+    for _ = 1, 3 do
+        local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
+        if data and data.players then
+            usersCache.list = dedupePlayers(data.players)
+            usersCache.at = os.clock()
+            break
+        end
+        task.wait(1)
+    end
+    usersCache.fetching = false
+    notifyDropdowns()
+end
+
 local function getUsersCached()
     if usersCache.at == 0 then
-        if not usersCache.fetching then
-            usersCache.fetching = true
-            task.spawn(function()
-                local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
-                usersCache.list = dedupePlayers((data and data.players) or {})
-                usersCache.at = os.clock()
-                usersCache.fetching = false
-                notifyDropdowns()
-            end)
+        if usersCache.fetching then
+            local t = 0
+            while usersCache.fetching and t < 8 do
+                task.wait(0.05)
+                t = t + 0.05
+            end
+            return usersCache.list
         end
+        usersCache.fetching = true
+        local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
+        usersCache.list = dedupePlayers((data and data.players) or {})
+        usersCache.at = os.clock()
+        usersCache.fetching = false
+        notifyDropdowns()
         return usersCache.list
     end
     local now = os.clock()
@@ -462,6 +486,8 @@ local function fitText(text, maxW, textSize, font)
     return text:sub(1, lo) .. "..."
 end
 
+task.spawn(prefetchUsers)
+
 local function aDropdown(parent, placeholder, getOptions, selectionState, onSelectionChanged, prewarm)
     local prewarmCount = prewarm or 60
 
@@ -501,6 +527,16 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
     }, container)
     aCorner(listHolder, 6)
     aStroke(listHolder, ADMIN_BORDER, 1, 0)
+
+    local emptyLabel = aNew("TextLabel", {
+        Name = "EmptyLabel",
+        Size = UDim2.new(1, -12, 0, 24), Position = UDim2.new(0, 8, 0, 3),
+        BackgroundTransparency = 1, Visible = false,
+        Text = "", TextColor3 = Color3.fromRGB(160, 120, 140),
+        TextSize = 11, Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 22,
+    }, listHolder)
 
     local scroll = aNew("ScrollingFrame", {
         Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3),
@@ -611,6 +647,8 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
         local allOpts = getOptions(query) or {}
         local shown = #allOpts
 
+        local isLoading = (shown == 0 and usersCache.at == 0)
+
         self.renderToken = self.renderToken + 1
         local myToken = self.renderToken
 
@@ -628,7 +666,25 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
         local totalH = math.min(contentH, maxContentH) + 6
         scroll.ScrollBarThickness = (contentH > maxContentH) and 4 or 0
 
-        listHolder.Visible = (shown > 0)
+        if shown == 0 then
+            emptyLabel.Visible = true
+            if isLoading then
+                emptyLabel.Text = "Loading users..."
+                totalH = 30
+            elseif query ~= "" then
+                emptyLabel.Text = "No matches"
+                totalH = 30
+            else
+                emptyLabel.Text = "No users"
+                totalH = 30
+            end
+            scroll.Visible = false
+        else
+            emptyLabel.Visible = false
+            scroll.Visible = true
+        end
+
+        listHolder.Visible = true
         if isOpening then
             listHolder.Size = UDim2.new(1, 0, 0, 0)
             TweenService:Create(listHolder, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, totalH) }):Play()
@@ -829,6 +885,10 @@ function buildAdminPanel()
     local old = guiParent:FindFirstChild("MoondietyAdminPanel")
     if old then old:Destroy() end
     allDropdowns = {}
+
+    if usersCache.at == 0 and not usersCache.fetching then
+        task.spawn(prefetchUsers)
+    end
 
     local sg = aNew("ScreenGui", {
         Name = "MoondietyAdminPanel", ResetOnSpawn = false,
@@ -1215,10 +1275,6 @@ function buildAdminPanel()
                 pcall(refreshServers)
             end
         end
-    end)
-
-    task.spawn(function()
-        pcall(getUsersCached)
     end)
 
     setActiveTab("User Panel")
