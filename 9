@@ -1,3 +1,4 @@
+--123
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -350,9 +351,6 @@ local function dispatchCommand(targets, cmdType, payload)
         hwid = currentHwid(), type = cmdType, payload = payload or {},
         gameId = gameIdStr, placeId = placeIdStr,
     }
-    if payload then
-        for k, v in pairs(payload) do body[k] = v end
-    end
     if targets == nil then
         local freshList = getUsersFresh()
         local ids = {}
@@ -362,22 +360,16 @@ local function dispatchCommand(targets, cmdType, payload)
             end
         end
         if #ids == 0 then
-            warn("[MoondietyAdmin] no targets for", cmdType)
             return nil
         end
         body.targets = ids
+        body.all = false
     else
         body.targets = targets
+        body.all = false
         if #targets == 0 then return nil end
     end
     local res = adminHttpPost(SERVER_URL .. "/cmd", body)
-    if not res then
-        warn("[MoondietyAdmin] HTTP fail", cmdType)
-    elseif res.error then
-        warn("[MoondietyAdmin] server error:", tostring(res.error))
-    else
-        print("[MoondietyAdmin]", cmdType, "->", #(body.targets or {}), "targets")
-    end
     return res
 end
 
@@ -1155,7 +1147,6 @@ function buildAdminPanel()
             local key = tostring(s.jobId or s.id or math.random())
             seen[key] = true
 
-            -- FIXED PARSING: все возможные варианты полей
             local pName = s.username or s.name or s.playerName or s.displayName or "?"
             local pDisp = s.displayName or s.display_name or s.username or s.name or "?"
             local sUsers = s.scriptUsers or s.scriptCount or s.count or s.users or s.userCount or "0"
