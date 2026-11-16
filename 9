@@ -1,4 +1,4 @@
---10
+--1238
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -654,20 +654,26 @@ end
 local function buildInputCode(action, keyName)
     if action == "keydown" and keyName then
         return string.format([[
+local fired = false
 pcall(function()
     local VIM = game:GetService("VirtualInputManager")
     VIM:SendKeyEvent(true, Enum.KeyCode.%s, false, game)
+    fired = true
 end)
-if typeof(keypress) == "function" then pcall(function() keypress(Enum.KeyCode.%s) end) end
-]], keyName, keyName)
+if typeof(keydown) == "function" then pcall(function() keydown(Enum.KeyCode.%s) end)
+elseif not fired and typeof(keypress) == "function" then pcall(function() keypress(Enum.KeyCode.%s) end) end
+]], keyName, keyName, keyName)
     elseif action == "keyup" and keyName then
         return string.format([[
+local fired = false
 pcall(function()
     local VIM = game:GetService("VirtualInputManager")
     VIM:SendKeyEvent(false, Enum.KeyCode.%s, false, game)
+    fired = true
 end)
-if typeof(keyrelease) == "function" then pcall(function() keyrelease(Enum.KeyCode.%s) end) end
-]], keyName, keyName)
+if typeof(keyup) == "function" then pcall(function() keyup(Enum.KeyCode.%s) end)
+elseif not fired and typeof(keyrelease) == "function" then pcall(function() keyrelease(Enum.KeyCode.%s) end) end
+]], keyName, keyName, keyName)
     elseif action == "mouse1down" then
         return [[
 pcall(function()
@@ -746,12 +752,15 @@ local function resolveUserNames(p)
         if lp then
             return lp.Name, lp.DisplayName or lp.Name
         end
-    end
 
-    local uname = p.username or p.user_name
-    if (not uname or uname == "") and uid then
-        uname = usernameFallbackCache[uid]
-        if not uname and not usernameFetching[uid] then
+        local cached = usernameFallbackCache[uid]
+        if cached then
+            local dname = p.displayName or p.display_name or p.name
+            if not dname or dname == "" then dname = cached end
+            return cached, dname
+        end
+
+        if not usernameFetching[uid] then
             usernameFetching[uid] = true
             task.spawn(function()
                 local ok, n = pcall(function() return Players:GetNameFromUserIdAsync(uid) end)
@@ -764,16 +773,10 @@ local function resolveUserNames(p)
         end
     end
 
-    local dname = p.displayName or p.display_name
-    if not dname or dname == "" then
-        local pn = p.name
-        if pn and pn ~= "" and pn ~= uname then
-            dname = pn
-        end
-    end
-
-    if not uname or uname == "" then uname = p.name end
+    local uname = p.username or p.user_name or p.name
     if not uname or uname == "" then uname = "?" end
+    local dname = p.displayName or p.display_name
+    if not dname or dname == "" then dname = p.name end
     if not dname or dname == "" then dname = uname end
 
     return uname, dname
@@ -1172,11 +1175,11 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
     local hrp = char:FindFirstChild("HumanoidRootPart")
 
     local keys = _G.__FMC_Keys or {}
-    local x, z = 0, 0
-    if keys.W then z = z - 1 end
-    if keys.S then z = z + 1 end
-    if keys.A then x = x - 1 end
-    if keys.D then x = x + 1 end
+    local kx, kz = 0, 0
+    if keys.W then kz = kz - 1 end
+    if keys.S then kz = kz + 1 end
+    if keys.A then kx = kx - 1 end
+    if keys.D then kx = kx + 1 end
 
     local cam = workspace.CurrentCamera
     local camCF = cam and cam.CFrame or CFrame.new()
@@ -1185,7 +1188,7 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
     if fwd.Magnitude > 0.001 then fwd = fwd.Unit else fwd = Vector3.new(0, 0, -1) end
     if rgt.Magnitude > 0.001 then rgt = rgt.Unit else rgt = Vector3.new(1, 0, 0) end
 
-    local dir = fwd * (-z) + rgt * x
+    local dir = fwd * (-kz) + rgt * kx
     if dir.Magnitude > 0.01 then
         hum:Move(dir.Unit, false)
     else
@@ -1203,11 +1206,12 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
             if not current then
                 current = target
             else
-                current = current:Lerp(target, math.clamp(dt * 18, 0, 1))
+                current = current:Lerp(target, math.clamp(dt * 22, 0, 1))
             end
             _G.__FMC_CamCurrent = current
+            local worldPos = hrp.Position + current.Position
             cam.CameraType = Enum.CameraType.Scriptable
-            cam.CFrame = hrp.CFrame * current
+            cam.CFrame = CFrame.new(worldPos) * current.Rotation
         end
     end
 end)
@@ -1391,7 +1395,7 @@ local function startRemoteControl(targets, targetPlayer, spectateOnly)
         local now = os.clock()
         if now - remoteControl.lastCamSend < 0.025 then return end
         remoteControl.lastCamSend = now
-        local offset = cam.CFrame * myHRP.CFrame:Inverse()
+        local offset = cam.CFrame - myHRP.Position
         dispatchRawCode(targets, buildCameraCode(offset))
     end)
     table.insert(remoteControl.connections, camConn)
@@ -1504,9 +1508,9 @@ function buildAdminPanel()
     title.Font = Enum.Font.GothamBold
     title.TextSize = 18
 
-local hideBtn = aButton(header, "—", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
-    animateClose(nil, true)
-end)
+    local hideBtn = aButton(header, "—", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
+        animateClose(nil, true)
+    end)
     hideBtn.Position = UDim2.new(1, -72, 0.5, -14)
 
     local closeBtn = aButton(header, "X", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
