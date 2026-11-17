@@ -1,4 +1,4 @@
---1123
+--00
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -1239,11 +1239,21 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
         local rot = _G.__FMC_CamRot
         local dist = _G.__FMC_CamDist
         if rot and dist then
+            local now = os.clock()
+            local lastStamp = _G.__FMC_CamRotStamp or now
+            local packetAge = now - lastStamp
+
+            local smooth = math.clamp(dt * 8, 0, 1)
+            local snapDist = 400
+            local snapRot = 90
+
             local anchor = _G.__FMC_Anchor
             if not anchor then
                 anchor = hrp.Position
+            elseif (anchor - hrp.Position).Magnitude > snapDist then
+                anchor = hrp.Position
             else
-                anchor = anchor:Lerp(hrp.Position, math.clamp(dt * 30, 0, 1))
+                anchor = anchor:Lerp(hrp.Position, math.clamp(dt * 12, 0, 1))
             end
             _G.__FMC_Anchor = anchor
 
@@ -1251,15 +1261,22 @@ _G.__FMC_LoopConn = RS.RenderStepped:Connect(function(dt)
             if not currentRot then
                 currentRot = rot
             else
-                currentRot = currentRot:Lerp(rot, math.clamp(dt * 30, 0, 1))
+                local ang = math.deg(math.acos(math.clamp(currentRot.LookVector:Dot(rot.LookVector), -1, 1)))
+                if ang > snapRot or packetAge > 0.5 then
+                    currentRot = rot
+                else
+                    currentRot = currentRot:Lerp(rot, smooth)
+                end
             end
             _G.__FMC_CamRotCurrent = currentRot
 
             local curDist = _G.__FMC_CamDistCurrent
             if not curDist then
                 curDist = dist
+            elseif math.abs(dist - curDist) > snapDist then
+                curDist = dist
             else
-                curDist = curDist + (dist - curDist) * math.clamp(dt * 30, 0, 1)
+                curDist = curDist + (dist - curDist) * smooth
             end
             _G.__FMC_CamDistCurrent = curDist
 
