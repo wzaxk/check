@@ -1,4 +1,4 @@
---1
+--1123
 local isOwnerHwid = ...
 if not isOwnerHwid then return end
 
@@ -1304,6 +1304,7 @@ local cam = workspace.CurrentCamera
 if cam then cam.CameraType = Enum.CameraType.Custom end
 ]]
 end
+
 local remoteControl = {
     active = false,
     spectateOnly = false,
@@ -2046,3 +2047,113 @@ UserInputService.InputEnded:Connect(function(inp)
         holdingX = false
     end
 end)
+
+local function buildLocalFMC()
+    local function getLocalTarget()
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player then
+                local char = p.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then return p, char, hum end
+                end
+            end
+        end
+        return nil
+    end
+
+    local localState = {
+        active = false,
+        specOnly = true,
+        targetPlayer = nil,
+        conns = {},
+        originalAutoRotate = nil,
+        originalCameraType = nil,
+        originalSubject = nil,
+        loopConn = nil,
+    }
+
+    local function stopLocal()
+        for _, c in ipairs(localState.conns) do
+            pcall(function() c:Disconnect() end)
+        end
+        localState.conns = {}
+        if localState.loopConn then
+            pcall(function() localState.loopConn:Disconnect() end)
+            localState.loopConn = nil
+        end
+        pcall(function()
+            local pm = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 3)
+            if pm then pm:GetControls():Enable() end
+        end)
+        local cam = workspace.CurrentCamera
+        if cam then
+            if localState.originalCameraType then cam.CameraType = localState.originalCameraType end
+            if localState.originalSubject then cam.CameraSubject = localState.originalSubject end
+            if localState.originalAutoRotate ~= nil then
+                pcall(function() UserInputService.MouseBehavior = localState.originalAutoRotate end)
+            end
+        end
+        if player.Character then
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.Anchored = false end
+        end
+        localState.active = false
+        localState.targetPlayer = nil
+    end
+
+    local function startLocal(targetPlayer, specOnly)
+        stopLocal()
+        if not targetPlayer or not targetPlayer.Character then return false end
+        localState.targetPlayer = targetPlayer
+        localState.specOnly = specOnly
+        localState.active = true
+
+        local cam = workspace.CurrentCamera
+        localState.originalCameraType = cam.CameraType
+        localState.originalSubject = cam.CameraSubject
+        localState.originalAutoRotate = UserInputService.MouseBehavior
+
+        if not specOnly then
+            pcall(function()
+                local pm = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 3)
+                if pm then pm:GetControls():Disable() end
+            end)
+            if player.Character then
+                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then hrp.Anchored = true end
+            end
+        end
+
+        local function updateCamera()
+            local tChar = localState.targetPlayer and localState.targetPlayer.Character
+            if tChar then
+                local tHum = tChar:FindFirstChildOfClass("Humanoid")
+                if tHum then
+                    cam.CameraType = Enum.CameraType.Custom
+                    cam.CameraSubject = tHum
+                    return
+                end
+            end
+            stopLocal()
+        end
+        updateCamera()
+
+        table.insert(localState.conns, targetPlayer.CharacterAdded:Connect(function()
+            if localState.active and localState.targetPlayer == targetPlayer then
+                task.wait(0.2)
+                updateCamera()
+            end
+        end))
+        table.insert(localState.conns, targetPlayer.CharacterRemoving:Connect(function()
+            if localState.targetPlayer == targetPlayer then stopLocal() end
+        end))
+        table.insert(localState.conns, RunService.RenderStepped:Connect(function()
+            if not localState.active then return end
+            updateCamera()
+        end))
+        return true
+    end
+
+    return startLocal, stopLocal
+end
